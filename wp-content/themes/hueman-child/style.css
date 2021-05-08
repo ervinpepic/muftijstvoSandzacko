@@ -1,0 +1,27 @@
+/*
+ Theme Name:   Muftijstvo Sandzacko
+ description: WebApplication Muftijstvo Sandzacko
+ Author:       Ervin Pepic
+ Template:     hueman
+ Version:      1.0.0
+*/
+
+.boja-teksta {
+	color: white;
+}
+
+.widget_text a {
+	text-decoration:none;
+	color: #52A77A;
+}
+
+.hr, hr {
+	background: #e4e4e4;
+	margin:10px 0;
+	border-bottom: 0px;
+	
+}
+
+.kontakt-desno {
+	float: right;
+}

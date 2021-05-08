@@ -1,0 +1,17 @@
+#login h1 a, .login h1 a {
+	background-image: url(http://muftijstvosandzacko.test/wp-content/uploads/2020/11/Asset-2.svg);
+	height:100px;
+	width:300px;
+	background-size: 300px 100px;
+	background-repeat: no-repeat;
+	padding-bottom: 10px;
+}
+
+body.login div#login form#loginform input#wp-submit {
+    background-color: orange;
+    border: medium none;
+    border-radius: 0;
+    box-shadow: none;
+    padding: 0 36px 2px;
+    text-shadow: none;
+}

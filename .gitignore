@@ -1,9 +1,9 @@
 /wp-content/upgrade
 /wp-content/uploads
 /wp-content/*
-/!wp-content/mu-plugins/
-/!wp-content/plugins/
-/!wp-content/themes/
+!wp-content/mu-plugins/
+!wp-content/plugins/
+!wp-content/themes/
 /wp-config.php
 /wp-content/plugins/hello.php
 /wp-content/themes/twenty*/
@@ -16,4 +16,4 @@
 *.sql
 *.sqlite
 *.DSStore *Thumbs.db _.sass-cache ~imageoptim
-.gitignore
+/.gitignore
