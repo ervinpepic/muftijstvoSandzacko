@@ -24,6 +24,9 @@ final class Nimble_Options_Setting extends \WP_Customize_Setting {
 
   // March 2021 => set autoload to "no" for #799
   public function update( $value ) {
+    // Make sure cached objects are cleaned
+    wp_cache_flush();
+
     // When a site template is modified, the following action allows NB to remove the skoped post + removes the corresponding CSS stylesheet
     // For example, when the page site template is changed, we need to remove the associated skoped post named 'nimble___skp__all_page'
     // This post has been inserted when running sek_maybe_get_seks_for_group_site_template(), fired from sek_get_skoped_seks()
@@ -59,7 +62,7 @@ final class Nimble_Collection_Setting extends \WP_Customize_Setting {
    * Capability required to edit this setting.
    * @var string
    */
-  public $capability = 'edit_theme_options';
+  public $capability = 'customize';
 
 
   public $skope_id = '';
@@ -75,6 +78,7 @@ final class Nimble_Collection_Setting extends \WP_Customize_Setting {
    */
   public function __construct( $manager, $id, $args = array() ) {
     parent::__construct( $manager, $id, $args );
+    
     // shall start with "nimble___"
     if ( 0 !== strpos( $this->id_data['base'], NIMBLE_OPT_PREFIX_FOR_SEKTION_COLLECTION ) ) { //$this->id_data['base'] looks like "nimble___"
         throw new \Exception( 'Nimble_Collection_Setting => __construct => Expected ' . NIMBLE_OPT_PREFIX_FOR_SEKTION_COLLECTION . ' id_base.' );
@@ -169,6 +173,9 @@ final class Nimble_Collection_Setting extends \WP_Customize_Setting {
    * @return int|false The post ID or false if the value could not be saved.
    */
   public function update( $seks_collection ) {
+      // Make sure cached objects are cleaned
+      wp_cache_flush();
+
       if ( !is_array( $seks_collection ) ) {
           $seks_collection = array();
       }

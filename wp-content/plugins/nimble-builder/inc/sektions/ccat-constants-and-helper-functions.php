@@ -68,6 +68,7 @@ if ( !defined( 'NIMBLE_JQUERY_MIGRATE_URL' ) ) { define ( 'NIMBLE_JQUERY_MIGRATE
 if ( !defined( "NIMBLE_DATA_API_URL_V2" ) ) { define( "NIMBLE_DATA_API_URL_V2",
   ( defined('NIMBLE_FETCH_API_LOCALLY') && NIMBLE_FETCH_API_LOCALLY && defined('NIMBLE_LOCAL_API_URL') ) ? NIMBLE_LOCAL_API_URL : 'https://api.nimblebuilder.com/wp-json/nimble/v2/cravan'
 ); }
+if ( !defined( 'NIMBLE_PRO_URL' ) ) { define ( 'NIMBLE_PRO_URL', 'https://presscustomizr.com/nimble-builder-pro' ); }
 
 // @return bool
 function sek_is_debug_mode() {
@@ -3447,6 +3448,7 @@ add_filter('sek_get_raw_section_registration_params', function( $collection ) {
 function sek_generate_level_guid() {
     return NIMBLE_PREFIX_FOR_SETTING_NOT_SAVED . substr( strval( md5( uniqid( rand(), true) ) ),0, 12 );//__nimble__4cdf8be5ce8f
 }
+
 ?><?php
 // /* ------------------------------------------------------------------------- *
 // *  NIMBLE API
@@ -3597,7 +3599,7 @@ function sek_get_nimble_api_data( $params ) {
     }
 
     $api_data = '_api_error_' === $api_data ? null : $api_data;
-    wp_cache_set( $wp_cache_key  , $api_data );
+    wp_cache_set( $wp_cache_key, $api_data );
 
     //sek_error_log('API DATA for ' . $transient_name, $api_data );
 
@@ -3633,7 +3635,7 @@ function sek_get_all_tmpl_api_data( $force_update = false ) {
 }
 
 
-function sek_get_single_tmpl_api_data( $tmpl_name, $force_update = false ) {
+function sek_get_single_tmpl_api_data( $tmpl_name, $is_pro_tmpl = false, $force_update = false ) {
     // set this constant in wp_config.php
     $force_update = ( defined( 'NIMBLE_FORCE_UPDATE_API_DATA') && NIMBLE_FORCE_UPDATE_API_DATA ) ? true : $force_update;
 
@@ -3647,7 +3649,16 @@ function sek_get_single_tmpl_api_data( $tmpl_name, $force_update = false ) {
         'force_update' => $force_update
     ]);
 
-    $api_data = is_array( $api_data ) ? $api_data : [];
+    // The api should return an array
+    if ( !is_array( $api_data ) || !array_key_exists( 'single_tmpl', $api_data ) ) {
+        return __('Problem when fetching template', 'nimble-builder');
+    }
+
+    // If the api returned a pro license key problem, bail now and return the api string message
+    if ( $is_pro_tmpl && is_string( $api_data['single_tmpl'] ) ) {
+        return $api_data['single_tmpl'];
+    }
+
     $api_data = wp_parse_args( $api_data, [
         'timestamp' => '',
         'single_tmpl' => null
@@ -3657,7 +3668,11 @@ function sek_get_single_tmpl_api_data( $tmpl_name, $force_update = false ) {
         sek_error_log( __FUNCTION__ . ' => error => empty template for ' . $tmpl_name );
         return array();
     }
-    
+    if ( !is_array( $api_data['single_tmpl'] ) ) {
+        sek_error_log( __FUNCTION__ . ' => invalid template for ' . $tmpl_name );
+        return array();
+    }
+
     if ( !array_key_exists( 'data', $api_data['single_tmpl'] ) || !array_key_exists( 'metas',$api_data['single_tmpl'] ) ) {
         sek_error_log( __FUNCTION__ . ' => error => invalid template data for ' . $tmpl_name );
         return array();
@@ -4188,7 +4203,7 @@ function sek_maybe_optimize_options() {
 // fired @wp_loaded
 // Note : if fired @plugins_loaded, invoking wp_update_post() generates php notices
 function sek_maybe_do_version_mapping() {
-    // if ( !is_user_logged_in() || !current_user_can( 'edit_theme_options' ) )
+    // if ( !is_user_logged_in() || !current_user_can( 'customize' ) )
     //   return;
     // //delete_option(NIMBLE_OPT_NAME_FOR_GLOBAL_OPTIONS);
     // $global_options = get_option( NIMBLE_OPT_NAME_FOR_GLOBAL_OPTIONS );
@@ -5120,18 +5135,19 @@ function sek_maybe_get_seks_for_group_site_template( $skope_id, $local_seks_data
 
 // @return null || array
 // get and cache the group site template data
-function sek_get_group_site_template_data() {
+function sek_get_group_site_template_data( $group_skope = null ) {
     // When ajaxing while customizing, no need to get the group site template data
     if ( skp_is_customizing() && defined( 'DOING_AJAX' ) && DOING_AJAX )
         return;
-    $cached = wp_cache_get('nimble_group_site_template_data');
-    if ( false !== $cached )
-        return $cached;
-
     $group_site_tmpl_data = [];
-    
-    $group_skope = sek_get_group_skope_for_site_tmpl();
-
+    if ( is_null( $group_skope ) ) {
+        $group_skope = sek_get_group_skope_for_site_tmpl();
+    }
+    $cache_key = 'nimble_group_site_template_data_' . $group_skope;
+    $cached = wp_cache_get( $cache_key );
+    if ( false !== $cached ) {
+        return $cached;
+    }
     // Site template params are structured as follow :
     // [
     //     'site_tmpl_id' : '_no_site_tmpl_',
@@ -5139,8 +5155,10 @@ function sek_get_group_site_template_data() {
     //     'site_tmpl_title' : ''
     //];
     $tmpl_params = sek_get_site_tmpl_params_for_skope( $group_skope );
-    if ( '_no_site_tmpl_' === $tmpl_params['site_tmpl_id'] )
+    if ( '_no_site_tmpl_' === $tmpl_params['site_tmpl_id'] ) {
+        wp_cache_set( $cache_key, $group_site_tmpl_data );
         return;
+    }
 
     $site_tmpl_id = $tmpl_params['site_tmpl_id'];
     $site_tmpl_source = $tmpl_params['site_tmpl_source'];
@@ -5191,21 +5209,23 @@ function sek_get_group_site_template_data() {
     if ( $post ) {
         $group_site_tmpl_data = maybe_unserialize( $post->post_content );
     }
-    wp_cache_set('nimble_group_site_template_data', $group_site_tmpl_data );
+    wp_cache_set( $cache_key, $group_site_tmpl_data );
     return $group_site_tmpl_data;
 }
 
 
 // @return bool
 function sek_has_group_site_template_data() {
-    $cached = wp_cache_get('nimble_has_group_site_template_data');
+    $group_skope = sek_get_group_skope_for_site_tmpl();
+    $cache_key = 'nimble_has_group_site_template_' . $group_skope;
+    $cached = wp_cache_get($cache_key);
     if (  'yes' === $cached || 'no' === $cached ) {
         return 'yes' === $cached;
     }
     
     $group_site_tmpl_data = sek_get_group_site_template_data();//<= is cached when called
     $has_group_skope_template_data = !( !$group_site_tmpl_data || empty($group_site_tmpl_data) );
-    wp_cache_set('nimble_has_group_site_template_data', $has_group_skope_template_data  ? 'yes' : 'no' );
+    wp_cache_set( $cache_key, $has_group_skope_template_data  ? 'yes' : 'no' );
     return $has_group_skope_template_data;
 }
 
@@ -6136,5 +6156,23 @@ function sek_maybe_encode_richtext( $string ){
 }
 
 
+
+
+// Feb 2021 added to fix regression https://github.com/presscustomizr/nimble-builder/issues/791
+// Recursive
+function sek_sniff_and_decode_richtext( $seks_data ) {
+    if ( is_array( $seks_data ) ) {
+        foreach( $seks_data as $key => $data ) {
+            if ( is_array( $data ) ) {
+                $seks_data[$key] = sek_sniff_and_decode_richtext( $data );
+            } else {
+                if ( is_string($data) ) {
+                    $seks_data[$key] = sek_maybe_decode_richtext( $data );
+                }
+            }
+        }
+    }
+    return $seks_data;
+  }
 
 ?>

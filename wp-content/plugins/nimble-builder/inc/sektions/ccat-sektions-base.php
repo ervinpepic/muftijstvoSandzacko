@@ -2187,9 +2187,9 @@ if ( !class_exists( 'SEK_Front_Construct' ) ) :
         // option key as saved in db => module_type
         // is used in _1_6_5_sektions_generate_UI_global_options.js and when normalizing the global option in sek_normalize_global_options_with_defaults()
         public static $global_options_map = [
-            'site_templates' => 'sek_site_tmpl_pickers',
             'global_header_footer' => 'sek_global_header_footer',
             'global_text' => 'sek_global_text',
+            'site_templates' => 'sek_site_tmpl_pickers',
             'widths' => 'sek_global_widths',
             'breakpoint' => 'sek_global_breakpoint',
             'performances' => 'sek_global_performances',
@@ -2197,7 +2197,7 @@ if ( !class_exists( 'SEK_Front_Construct' ) ) :
             'global_revisions' => 'sek_global_revisions',
             'global_reset' => 'sek_global_reset',
             'global_imp_exp' => 'sek_global_imp_exp',
-            'beta_features' => 'sek_global_beta_features'
+            'beta_features' => 'sek_global_beta_features'// may 2021 not rendered anymore  in ::controls customizer
         ];
         // option key as saved in db => module_type
         // is used in _1_6_4_sektions_generate_UI_local_skope_options.js and when normalizing the global option in sek_normalize_local_options_with_defaults()
@@ -2390,7 +2390,18 @@ if ( !class_exists( 'SEK_Front_Construct' ) ) :
                 }
                 return $module_collection;
             });
+
+            // see #838
+            // prevents using persistent cache object systems like Memcached which override the default WP class WP_Object_Cache () which is normally refreshed on each page load )
+            add_action('init', array( $this, 'sek_clear_cached_objects_when_customizing') );
         }//__construct
+
+        public function sek_clear_cached_objects_when_customizing() {
+            if ( skp_is_customizing() ) {
+                // Make sure cached objects are cleaned
+                wp_cache_flush();
+            }
+        }
 
         // @fired @hook 'widgets_init'
         // Creates 10 widget zones
@@ -2577,9 +2588,6 @@ if ( !class_exists( 'SEK_Front_Ajax' ) ) :
 
             if ( !is_user_logged_in() ) {
                 wp_send_json_error( __CLASS__ . '::' . __FUNCTION__ . ' => unauthenticated' );
-            }
-            if ( !current_user_can( 'edit_theme_options' ) ) {
-              wp_send_json_error( __CLASS__ . '::' . __FUNCTION__ . ' => user_cant_edit_theme_options');
             }
             if ( !current_user_can( 'customize' ) ) {
                 status_header( 403 );
@@ -3384,7 +3392,7 @@ if ( !class_exists( 'SEK_Front_Assets' ) ) :
         // FA fonts can be preloaded. the crossorigin param has to be added
         // => this removes Google Speed tests message "preload key requests"
         // important => the url of the font must be exactly the same as in font awesome stylesheet, including the query param at the end fa-brands-400.woff2?5.15.2
-        // // note that we could preload all other types available ( eot, woff, ttf, svg )
+        // note that we could preload all other types available ( eot, woff, ttf, svg )
         // but NB focus on preloading woff2 which is the type used by most recent browsers
         // see https://css-tricks.com/snippets/css/using-font-face/
         function sek_maybe_preload_fa_fonts() {

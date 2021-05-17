@@ -667,28 +667,12 @@ function nimble_add_i18n_localized_control_params( $params ) {
             'This page is customized with NB' => __('This page is customized with NB', 'nimble-builder'),
             'Refreshed to home page : site templates must be set when previewing home' => __('Refreshed to home page : site templates must be set when previewing home','nimble-builder'),
 
-            'Remove all sections and options of this page' => __('Remove all sections and options of this page', 'nimble-builder')
+            'Remove all sections and options of this page' => __('Remove all sections and options of this page', 'nimble-builder'),
+            'Go pro link when click on pro tmpl or section' =>  sprintf( '<a href="%2$s" target="_blank" rel="noreferrer noopener">%1$s</a>', __('🌟 Go pro to use this element 🌟', 'nimble-builder'), NIMBLE_PRO_URL )
         )//array()
     )//array()
     );//array_merge
 }//'nimble_add_i18n_localized_control_params'
-
-
-// Feb 2021 added to fix regression https://github.com/presscustomizr/nimble-builder/issues/791
-function sek_prepare_seks_data_for_customizer( $seks_data ) {
-    if ( is_array( $seks_data ) ) {
-        foreach( $seks_data as $key => $data ) {
-            if ( is_array( $data ) ) {
-                $seks_data[$key] = sek_prepare_seks_data_for_customizer( $data );
-            } else {
-                if ( is_string($data) ) {
-                    $seks_data[$key] = sek_maybe_decode_richtext( $data );
-                }
-            }
-        }
-    }
-    return $seks_data;
-}
 
 
 
@@ -719,7 +703,7 @@ function add_sektion_values_to_skope_export( $skopes ) {
         $seks_data = sek_get_skoped_seks( $skope_id );
 
         // Feb 2021 added to fix regression https://github.com/presscustomizr/nimble-builder/issues/791
-        $seks_data = sek_prepare_seks_data_for_customizer( $seks_data );
+        $seks_data = sek_sniff_and_decode_richtext( $seks_data );
 
         $skp_data[ 'sektions' ] = array(
             'db_values' => $seks_data,
@@ -1710,7 +1694,8 @@ function sek_print_nimble_input_templates() {
                 }
                 var title_attr = "<?php _e('Drag and drop or double-click to insert in your chosen target element.', 'nimble-builder'); ?>",
                     font_icon_class = !_.isEmpty( modData['font_icon'] ) ? 'is-font-icon' : '',
-                    is_draggable = true !== modData['active'] ? 'false' : 'true';
+                    is_draggable = true !== modData['active'] ? 'false' : 'true',
+                    is_pro_module = modData['is_pro'] ? 'yes' : 'no';
                 if ( true !== modData['active'] ) {
                     if ( modData['is_pro'] ) {
                         title_attr = "<?php _e('Pro feature', 'nimble-builder'); ?>";
@@ -1720,9 +1705,9 @@ function sek_print_nimble_input_templates() {
                 }
                 // "data-sek-eligible-for-module-dropzones" was introduced for https://github.com/presscustomizr/nimble-builder/issues/540
                 #>
-                <div draggable="{{is_draggable}}" data-sek-eligible-for-module-dropzones="true" data-sek-content-type="{{modData['content-type']}}" data-sek-content-id="{{modData['content-id']}}" title="{{title_attr}}"><div class="sek-module-icon {{font_icon_class}}"><# print(icon_img_html); #></div><div class="sek-module-title"><div class="sek-centered-module-title">{{modData['title']}}</div></div>
+                <div draggable="{{is_draggable}}" data-sek-eligible-for-module-dropzones="true" data-sek-content-type="{{modData['content-type']}}" data-sek-content-id="{{modData['content-id']}}" title="{{title_attr}}" data-sek-is-pro-module="{{is_pro_module}}"><div class="sek-module-icon {{font_icon_class}}"><# print(icon_img_html); #></div><div class="sek-module-title"><div class="sek-centered-module-title">{{modData['title']}}</div></div>
                   <#
-                  if ( modData['is_pro'] ) {
+                  if ( 'yes' === is_pro_module ) {
                     var pro_img_html = '<div class="sek-is-pro"><img src="' + sektionsLocalizedData.czrAssetsPath + 'sek/img/pro_orange.svg" alt="Pro feature"/></div>';
                     print(pro_img_html);
                   }
@@ -1777,17 +1762,18 @@ function sek_print_nimble_input_templates() {
                 }
 
                 var thumbUrl = [ sektionsLocalizedData.baseUrl , '/assets/img/section_assets/thumbs/', secParams['thumb'] ,  '?ver=' , img_version ].join(''),
-                    styleAttr = 'background: url(' + thumbUrl  + ') 50% 50% / cover no-repeat;';
-                    is_draggable = true !== secParams['active'] ? 'false' : 'true';
+                    styleAttr = 'background: url(' + thumbUrl  + ') 50% 50% / cover no-repeat;',
+                    is_draggable = true !== secParams['active'] ? 'false' : 'true',
+                    is_pro_section = secParams['is_pro'] ? 'yes' : 'no';
 
                 if ( !_.isEmpty(secParams['height']) ) {
                     styleAttr = styleAttr + 'height:' + secParams['height'] + ';';
                 }
 
                 #>
-                <div draggable="{{is_draggable}}" data-sek-content-type="preset_section" data-sek-content-id="{{secParams['content-id']}}" style="<# print(styleAttr); #>" title="{{secParams['title']}}" data-sek-section-type="{{section_type}}"><div class="sek-overlay"></div>
+                <div draggable="{{is_draggable}}" data-sek-content-type="preset_section" data-sek-content-id="{{secParams['content-id']}}" style="<# print(styleAttr); #>" title="{{secParams['title']}}" data-sek-section-type="{{section_type}}" data-sek-is-pro-section="{{is_pro_section}}"><div class="sek-overlay"></div>
                   <#
-                  if ( secParams['is_pro'] ) {
+                  if ( 'yes' === is_pro_section ) {
                     var pro_img_html = '<div class="sek-is-pro"><img src="' + sektionsLocalizedData.czrAssetsPath + 'sek/img/pro_orange.svg" alt="Pro feature"/></div>';
                     print(pro_img_html);
                   }
@@ -3951,7 +3937,7 @@ function sek_do_ajax_pre_checks( $params = array() ) {
     if ( !is_user_logged_in() ) {
         wp_send_json_error( __CLASS__ . '::' . __FUNCTION__ . ' => unauthenticated' );
     }
-    if ( !current_user_can( 'edit_theme_options' ) ) {
+    if ( !current_user_can( 'customize' ) ) {
       wp_send_json_error( __CLASS__ . '::' . __FUNCTION__ . ' => user_cant_edit_theme_options');
     }
     if ( !current_user_can( 'customize' ) ) {
@@ -4261,7 +4247,7 @@ function sek_get_gfonts( $what = null ) {
 ?><?php
 add_action( 'customize_register', '\Nimble\sek_catch_export_action', PHP_INT_MAX );
 function sek_catch_export_action( $wp_customize ) {
-    if ( current_user_can( 'edit_theme_options' ) ) {
+    if ( current_user_can( 'customize' ) ) {
         if ( isset( $_REQUEST['sek_export_nonce'] ) ) {
             sek_maybe_export();
         }
@@ -4352,9 +4338,6 @@ function sek_ajax_pre_export_checks() {
     if ( !is_user_logged_in() ) {
         wp_send_json_error( 'user_unauthenticated' );
     }
-    if ( !current_user_can( 'edit_theme_options' ) ) {
-        wp_send_json_error( 'user_cant_edit_theme_options' );
-    }
     if ( !current_user_can( 'customize' ) ) {
         status_header( 403 );
         wp_send_json_error( 'customize_not_allowed' );
@@ -4421,9 +4404,6 @@ function sek_ajax_get_manually_imported_file_content() {
     }
     if ( !is_user_logged_in() ) {
         wp_send_json_error( 'user_unauthenticated' );
-    }
-    if ( !current_user_can( 'edit_theme_options' ) ) {
-        wp_send_json_error( 'user_cant_edit_theme_options' );
     }
     if ( !current_user_can( 'customize' ) ) {
         status_header( 403 );
@@ -4516,7 +4496,7 @@ function sek_ajax_get_manually_imported_file_content() {
 
     // Make sure NB decodes encoded rich text before sending to the customizer
     // see #544 and #791
-    $raw_unserialized_data['data'] = sek_prepare_seks_data_for_customizer( $raw_unserialized_data['data'] );
+    $raw_unserialized_data['data'] = sek_sniff_and_decode_richtext( $raw_unserialized_data['data'] );
 
     $imported_content = array(
         //'data' => apply_filters( 'nimble_pre_import', $raw_unserialized_data['data'], $do_import_images ),
@@ -4616,7 +4596,7 @@ function sek_ajax_sek_get_user_tmpl_json() {
             $tmpl_decoded['img_errors'] = !empty( Nimble_Manager()->img_import_errors ) ? implode(',', Nimble_Manager()->img_import_errors) : array();
             // Make sure we decode encoded rich text before sending to the customizer
             // see #544 and #791
-            $tmpl_decoded['data'] = sek_prepare_seks_data_for_customizer( $tmpl_decoded['data'] );
+            $tmpl_decoded['data'] = sek_sniff_and_decode_richtext( $tmpl_decoded['data'] );
 
             // added March 2021 for site templates #478
             // If property '__inherits_group_skope_tmpl_when_exists__' has been saved by mistake in the template, make sure it's unset now
@@ -4644,11 +4624,27 @@ function sek_ajax_sek_get_api_tmpl_json() {
         wp_send_json_error( __FUNCTION__ . '_missing_tmpl_post_name' );
     }
     $tmpl_name = $_POST['api_tmpl_name'];
-    $raw_tmpl_data = sek_get_single_tmpl_api_data( $tmpl_name );// <= returns an unserialized array, in which the template['data'] is NOT a JSON, unlike for user saved templates
-    if( !is_array( $raw_tmpl_data) || empty( $raw_tmpl_data ) ) {
+
+    // Pro Template case
+    $is_pro_tmpl = array_key_exists('api_tmpl_is_pro', $_POST ) && 'yes' === $_POST['api_tmpl_is_pro'];
+    if ( $is_pro_tmpl ) {
+        $pro_key_status = apply_filters( 'nimble_pro_key_status_OK', 'nok' );
+        if ( 'pro_key_status_ok' !== $pro_key_status ) {
+            wp_send_json_error( $pro_key_status );
+            return;
+        }
+    }
+
+    $raw_tmpl_data = sek_get_single_tmpl_api_data( $tmpl_name, $is_pro_tmpl );// <= returns an unserialized array, in which the template['data'] is NOT a JSON, unlike for user saved templates
+
+    // If the api returned a pro license key problem, bail now and return the api string message
+    if ( $is_pro_tmpl && is_string( $raw_tmpl_data ) && !empty( $raw_tmpl_data ) ) {
+        wp_send_json_error( $raw_tmpl_data );
+    } else if ( !is_array( $raw_tmpl_data) || empty( $raw_tmpl_data ) ) {
         sek_error_log( __FUNCTION__ . ' problem when getting template : ' . $tmpl_name );
         wp_send_json_error( __FUNCTION__ . '_invalid_template_'. $tmpl_name );
     }
+
     //sek_error_log( __FUNCTION__ . ' api template collection', $raw_tmpl_data );
     if ( !isset($raw_tmpl_data['data'] ) || empty( $raw_tmpl_data['data'] ) ) {
         sek_error_log( __FUNCTION__ . ' problem => missing or invalid data property for template : ' . $tmpl_name, $raw_tmpl_data );
@@ -4659,7 +4655,7 @@ function sek_ajax_sek_get_api_tmpl_json() {
         $raw_tmpl_data['img_errors'] = !empty( Nimble_Manager()->img_import_errors ) ? implode(',', Nimble_Manager()->img_import_errors) : array();
         // Make sure we decode encoded rich text before sending to the customizer
         // see #544 and #791
-        $raw_tmpl_data['data'] = sek_prepare_seks_data_for_customizer( $raw_tmpl_data['data'] );
+        $raw_tmpl_data['data'] = sek_sniff_and_decode_richtext( $raw_tmpl_data['data'] );
         
         // added March 2021 for site templates #478
         // If property '__inherits_group_skope_tmpl_when_exists__' has been saved by mistake in the template, make sure it's unset now
@@ -4875,9 +4871,9 @@ function sek_ajax_get_single_api_section_data() {
     $api_section_id = $_POST['api_section_id'];
 
     $is_pro_section_id = sek_is_pro() && is_string($api_section_id) && 'pro_' === substr($api_section_id,0,4);
-
-    if ( $is_pro_section_id && 'pro_key_status_ok' !== apply_filters( 'nimble_pro_key_status_OK', 'nok' ) ) {
-        wp_send_json_error( apply_filters( 'nimble_pro_key_status_OK', 'nok' ) );
+    $pro_key_status = apply_filters( 'nimble_pro_key_status_OK', 'nok' );
+    if ( $is_pro_section_id && 'pro_key_status_ok' !== $pro_key_status ) {
+        wp_send_json_error( $pro_key_status );
         return;
     }
     $raw_api_sec_data = sek_api_get_single_section_data( $api_section_id );// <= returns an unserialized array
@@ -4892,20 +4888,20 @@ function sek_ajax_get_single_api_section_data() {
 
     if( !is_array( $raw_api_sec_data) || empty( $raw_api_sec_data ) ) {
         sek_error_log( __FUNCTION__ . ' problem when getting section : ' . $api_section_id );
-        wp_send_json_error( __FUNCTION__ . '_invalid_section_'. $api_section_id );
+        wp_send_json_error( 'Error : empty or invalid section data : '. $api_section_id );
         return;
     }
     //sek_error_log( __FUNCTION__ . ' api section data', $raw_api_sec_data );
     if ( !isset($raw_api_sec_data['collection'] ) || empty( $raw_api_sec_data['collection'] ) ) {
         sek_error_log( __FUNCTION__ . ' problem => missing or invalid data property for section : ' . $api_section_id, $raw_api_sec_data );
-        wp_send_json_error( __FUNCTION__ . '_missing_data_property_for_section_' . $api_section_id );
+        wp_send_json_error( 'Error : missing_data_property_for_section : ' . $api_section_id );
     } else {
         // $tmpl_decoded = $raw_api_sec_data;
         $raw_api_sec_data['collection'] = sek_maybe_import_imgs( $raw_api_sec_data['collection'], $do_import_images = true );
         //$raw_api_sec_data['img_errors'] = !empty( Nimble_Manager()->img_import_errors ) ? implode(',', Nimble_Manager()->img_import_errors) : array();
         // Make sure we decode encoded rich text before sending to the customizer
         // see #544 and #791
-        $raw_api_sec_data['collection'] = sek_prepare_seks_data_for_customizer( $raw_api_sec_data['collection'] );
+        $raw_api_sec_data['collection'] = sek_sniff_and_decode_richtext( $raw_api_sec_data['collection'] );
 
         wp_send_json_success( $raw_api_sec_data );
     }
@@ -4954,7 +4950,7 @@ function sek_ajax_sek_get_user_section_json() {
         }
         // Make sure we decode encoded rich text before sending to the customizer
         // see #544 and #791
-        $section_decoded['data'] = sek_prepare_seks_data_for_customizer( $section_decoded['data'] );
+        $section_decoded['data'] = sek_sniff_and_decode_richtext( $section_decoded['data'] );
         wp_send_json_success( $section_decoded );
     } else {
         wp_send_json_error( __FUNCTION__ . '_section_post_not_found' );
