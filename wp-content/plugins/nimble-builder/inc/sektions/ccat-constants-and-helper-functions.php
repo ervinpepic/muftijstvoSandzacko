@@ -955,6 +955,7 @@ function sek_get_module_collection() {
           'title' => __( 'Icon', 'nimble-builder' ),
           'icon' => 'Nimble__icon_icon.svg'
         ),
+
         array(
           'content-type' => 'module',
           'content-id' => 'czr_special_img_module',
@@ -963,6 +964,15 @@ function sek_get_module_collection() {
           'is_pro' => !sek_is_pro(),
           'active' => sek_is_pro()
         ),
+        // array(
+        //     'content-type' => 'module',
+        //     'content-id' => 'czr_advanced_list_module',
+        //     'title' => __( 'Advanced List', 'text_doma' ),
+        //     'icon' => 'Nimble__advanced_list_icon.svg',
+        //     'is_pro' => !sek_is_pro(),
+        //     'active' => sek_is_pro() && defined( 'NB_PRO_BETA_ADVANCED_LIST_MODULE') && NB_PRO_BETA_ADVANCED_LIST_MODULE
+        // ),
+
         array(
           'content-type' => 'module',
           'content-id' => 'czr_button_module',
@@ -3511,12 +3521,12 @@ function sek_get_nimble_api_data( $params ) {
     }
 
     $transient_name = '';
-    $transient_duration = 24 * HOUR_IN_SECONDS;
+    $transient_duration = 7 * DAY_IN_SECONDS;
 
     switch ( $what ) {
         case 'latest_posts_and_start_msg':
             $transient_name = 'nimble_api_posts';
-            $transient_duration = 48 * HOUR_IN_SECONDS;
+            $transient_duration = 7 * DAY_IN_SECONDS;
         break;
         case 'all_tmpl':
             $transient_name = 'nimble_api_all_tmpl';
@@ -3524,6 +3534,7 @@ function sek_get_nimble_api_data( $params ) {
         break;
         case 'single_tmpl':
             $transient_name = 'nimble_api_tmpl_' . $tmpl_name;
+            $transient_duration = 2 * DAY_IN_SECONDS;
         break;
         case 'single_section':
             $transient_name = 'nimble_api_section_' . $section_id;
@@ -3551,12 +3562,36 @@ function sek_get_nimble_api_data( $params ) {
     }
 
     $api_data = $api_transient_data;
+    $invalid_transient_data = false;
+
+    // When requesting a single_section with sek_api_get_single_section_data, the expected returned data are formed like
+    // [
+    //     [timestamp] => 1621256718
+    //     [single_section] => []
+    // ]
+        // When requesting a single_tmpl with sek_get_single_tmpl_api_data, the expected returned data are formed like
+    // [
+    //     [timestamp] => 1621256718
+    //     [single_tmpl] => []
+    // ]
+    // If a problem occured when getting a pro section or template, single_section or single_tmpl is a string, not an array
+    // in this case, we need to re-connect to the api
+    // see https://github.com/presscustomizr/nimble-builder-pro/issues/193
+    if ( 'single_section' === $what && is_array( $api_data ) && array_key_exists('single_section', $api_data ) && !is_array($api_data['single_section'] ) ) {
+        $invalid_transient_data = true;
+    }
+    if ( 'single_tmpl' === $what && is_array( $api_data ) && array_key_exists('single_tmpl', $api_data ) && !is_array($api_data['single_tmpl'] ) ) {
+        $invalid_transient_data = true;
+    }
+
     // Connect to remote NB api when :
     // 1) api data transient is not set or has expired ( false === $api_transient_data )
     // 2) force_update param is true
     // 3) NB has been updated to a new version ( $api_needs_update case )
     // 4) Theme has been changed ( $api_needs_update case )
-    if ( $force_update || false === $api_data || $api_needs_update ) {
+    // 5) API DATA is not an array ( for https://github.com/presscustomizr/nimble-builder-pro/issues/193 )
+    // 6) Invalid transient data ( for https://github.com/presscustomizr/nimble-builder-pro/issues/193 )
+    if ( $force_update || false === $api_data || !is_array($api_data) || $api_needs_update || $invalid_transient_data ) {
         $query_params = apply_filters( 'nimble_api_query_params', [
             'timeout' => ( $force_update ) ? 25 : 8,
             'body' => [
@@ -3581,13 +3616,33 @@ function sek_get_nimble_api_data( $params ) {
         $api_data = json_decode( wp_remote_retrieve_body( $response ), true );
 
         if ( empty( $api_data ) || !is_array( $api_data ) ) {
+            sek_error_log( __FUNCTION__ . ' invalid api data after json decode', $api_data );
             // set the transient to '_api_error_', so that we don't hammer the api if not reachable. next call will be done after transient expiration
             $api_data = '_api_error_';
-            sek_error_log( __FUNCTION__ . ' invalid api data after json decode');
+        }
+        // When requesting a single_section with sek_api_get_single_section_data, the expected returned data are formed like
+        // [
+        //     [timestamp] => 1621256718
+        //     [single_section] => []
+        // ]
+         // When requesting a single_tmpl with sek_get_single_tmpl_api_data, the expected returned data are formed like
+        // [
+        //     [timestamp] => 1621256718
+        //     [single_tmpl] => []
+        // ]
+        // If a problem occured when getting a pro section or template, single_section or single_tmpl is a string, not an array
+        // in this case, we don't want to sage the api data like this as transient because user will need the transient to expire before getting the correct data ( see https://github.com/presscustomizr/nimble-builder-pro/issues/193 )
+        if ( 'single_section' === $what && array_key_exists('single_section', $api_data ) && !is_array($api_data['single_section'] ) ) {
+            sek_error_log( __FUNCTION__ . ' invalid single section api data', $api_data);
+            $api_data = '_api_error_';
+        }
+        if ( 'single_tmpl' === $what && array_key_exists('single_tmpl', $api_data ) && !is_array($api_data['single_tmpl'] ) ) {
+            sek_error_log( __FUNCTION__ . ' invalid single tmpl api data', $api_data);
+            $api_data = '_api_error_';
         }
 
-        // if the api could not be reached, let's retry in 30 minutes with a short transient duration
-        set_transient( $transient_name, $api_data, '_api_error_' === $api_data ? 30 * MINUTE_IN_SECONDS : $transient_duration );
+        // if the api could not be reached, let's retry in 2 minutes with a short transient duration
+        set_transient( $transient_name, $api_data, '_api_error_' === $api_data ? 2 * MINUTE_IN_SECONDS : $transient_duration );
         // The api data will be refreshed on next plugin update, or next theme switch. Or if $transient_name has expired.
         // $expected_version_transient_value = NIMBLE_VERSION . '_' . $theme_slug;
         set_transient( NIMBLE_API_CHECK_TRANSIENT_ID, $expected_version_transient_value, 100 * DAY_IN_SECONDS );
@@ -3972,10 +4027,18 @@ function sek_get_raw_section_registration_params() {
             'name' => __('Footer sections', 'nimble-builder'),
             'section_collection' => array(
                 array(
+                    'content-id' => 'footer_with_social_links_one',
+                    'title' => __('footer with dynamic date, site title and social links', 'nimble-builder' ),
+                    'thumb' => 'footer_with_social_links_one.jpg',
+                    'section_type' => 'footer',
+                    'height' => '51px'
+                ),
+                array(
                     'content-id' => 'footer_one',
-                    'title' => __('simple footer with 3 columns and large bottom zone', 'nimble-builder' ),
+                    'title' => __('simple 3 columns footer', 'nimble-builder' ),
                     'thumb' => 'footer_one.jpg',
-                    'section_type' => 'footer'
+                    'section_type' => 'footer',
+                    'height' => '75px'
                 )
             )
         ]

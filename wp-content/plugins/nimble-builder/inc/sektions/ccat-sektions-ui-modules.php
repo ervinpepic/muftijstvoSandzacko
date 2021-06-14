@@ -1543,7 +1543,7 @@ function sek_get_module_params_for_sek_level_bg_module() {
                 ),
                 'bg-use-post-thumb' => array(
                     'input_type'  => 'nimblecheck',
-                    'title'       => __('Use the current post thumbnail', 'nimble-builder'),
+                    'title'       => __('Use the contextual post thumbnail', 'nimble-builder'),
                     'title_width' => 'width-80',
                     'input_width' => 'width-20',
                     'refresh_markup' => true,
@@ -3304,14 +3304,14 @@ function sek_add_css_rules_for_sections_breakpoint( $rules, $section ) {
 
 ?><?php
 //Fired in add_action( 'after_setup_theme', 'sek_register_modules', 50 );
-function sek_get_module_params_for_sek_level_cust_css_section() {
+function sek_get_module_params_for_sek_level_cust_css_level() {
     $pro_text = '';
     if ( !sek_is_pro() ) {
-        $pro_text = sek_get_pro_notice_for_czr_input( __('custom CSS on a per section basis.', 'nimble-builder') );
+        $pro_text = sek_get_pro_notice_for_czr_input( __('custom CSS on a per level basis (section, column, module ).', 'nimble-builder') );
     }
     return array(
         'dynamic_registration' => true,
-        'module_type' => 'sek_level_cust_css_section',
+        'module_type' => 'sek_level_cust_css_level',
         //'name' => __('Width options', 'text_doma'),
         // 'sanitize_callback' => 'function_prefix_to_be_replaced_sanitize_callback__czr_social_module',
         // 'validate_callback' => 'function_prefix_to_be_replaced_validate_callback__czr_social_module',
@@ -3606,7 +3606,9 @@ function sek_get_module_params_for_sek_local_custom_css() {
                     'code_type' => 'text/css',// 'text/html' //<= use 'text/css' to instantiate the code mirror as CSS editor, which by default will be an HTML editor
                     'notice_before_title' => __('The CSS code added below will only be applied to the currently previewed page, not site wide.', 'nimble-builder'),
                     'refresh_markup' => false,
-                    'refresh_stylesheet' => true,
+                    'refresh_stylesheet' => false,
+                    'refresh_preview' => false,
+                    'refresh_css_via_post_message' => true
                 )
             )
         )//tmpl

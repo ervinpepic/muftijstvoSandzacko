@@ -639,6 +639,9 @@ function nimble_add_i18n_localized_control_params( $params ) {
             // Accordion module
             'Accordion title' => __('Accordion title', 'nimble-builder'),
 
+            // Advanced list module
+            'List item' => __('List item', 'nimble-builder'),
+
             // Template gallery and save
             'Last modified' => __('Last modified', 'nimble-builder'),
             'Use this template' => __('Use this template', 'nimble-builder'),
@@ -668,7 +671,7 @@ function nimble_add_i18n_localized_control_params( $params ) {
             'Refreshed to home page : site templates must be set when previewing home' => __('Refreshed to home page : site templates must be set when previewing home','nimble-builder'),
 
             'Remove all sections and options of this page' => __('Remove all sections and options of this page', 'nimble-builder'),
-            'Go pro link when click on pro tmpl or section' =>  sprintf( '<a href="%2$s" target="_blank" rel="noreferrer noopener">%1$s</a>', __('🌟 Go pro to use this element 🌟', 'nimble-builder'), NIMBLE_PRO_URL )
+            'Go pro link when click on pro tmpl or section' =>  sprintf( '<a href="%2$s" target="_blank" rel="noreferrer noopener">%1$s</a>', __('🌟 This is a Nimble Builder Pro element', 'nimble-builder'), NIMBLE_PRO_URL )
         )//array()
     )//array()
     );//array_merge
@@ -1681,17 +1684,19 @@ function sek_print_nimble_input_templates() {
                   'is_pro' : false
                 },
                 modData = jQuery.extend( defaultModParams, modData );
-
+                var _assets_version = "<?php echo NIMBLE_ASSETS_VERSION; ?>";
                 if ( !_.isEmpty( modData['icon'] ) ) {
                     if ( 'http' === modData['icon'].substring(0, 4) ) {
                       icon_img_src = modData['icon'];
                     } else {
                       icon_img_src = sektionsLocalizedData.moduleIconPath + modData['icon'];
                     }
+                    icon_img_src = icon_img_src + '?v=' + _assets_version;
                     icon_img_html = '<img draggable="false" title="' + modData['title'] + '" alt="' +  modData['title'] + '" class="nimble-module-icons" src="' + icon_img_src + '"/>';
                 } else if ( !_.isEmpty( modData['font_icon'] ) ) {
                     icon_img_html = modData['font_icon'];
                 }
+
                 var title_attr = "<?php _e('Drag and drop or double-click to insert in your chosen target element.', 'nimble-builder'); ?>",
                     font_icon_class = !_.isEmpty( modData['font_icon'] ) ? 'is-font-icon' : '',
                     is_draggable = true !== modData['active'] ? 'false' : 'true',

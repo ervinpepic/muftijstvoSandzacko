@@ -1721,6 +1721,7 @@ function sek_add_css_rules_for_css_sniffed_input_id( $rules, $params ) {
             $exploded = explode(',', $selector);
             foreach ( $exploded as $sel ) {
                 $new_selectors[] = $sel.':hover';
+                $new_selectors[] = $sel.':focus';
             }
 
             $selector = implode(',', $new_selectors);
@@ -2307,7 +2308,10 @@ if ( !class_exists( 'SEK_Front_Construct' ) ) :
             'czr_post_grid_module' => 'post-grid-module',
             'czr_simple_form_module' => 'simple-form-module',
             'czr_image_module' => 'image-module',
+
             'czr_special_img_module' => 'special-image-module',
+            'czr_advanced_list_module' => 'advanced-list-module',
+
             'czr_social_icons_module' => 'social-icons-module',
             'czr_button_module' => 'button-module',
             'czr_heading_module' => 'heading-module'
@@ -2319,7 +2323,7 @@ if ( !class_exists( 'SEK_Front_Construct' ) ) :
         public $css_loader_html = '<div class="sek-css-loader sek-mr-loader"><div></div><div></div><div></div></div>';
 
         // March 2020, for https://github.com/presscustomizr/nimble-builder/issues/649
-        public $nimble_content_is_printed_on_this_page = false;//<= tells if any Nimble Content has been printed.
+        public $nimble_customizing_or_content_is_printed_on_this_page = false;//<= tells if any Nimble Content has been printed.
         // October 2020
         public $page_has_local_or_global_sections = 'not_set';//<= set @wp_enqueue_script, used to determine if we should load css, js and fonts assets or not.
         // feb 2021, introduced for #478
@@ -2336,8 +2340,8 @@ if ( !class_exists( 'SEK_Front_Construct' ) ) :
         public $current_location_is_footer = false;
 
         // September 2020 for https://github.com/presscustomizr/nimble-builder-pro/issues/67
-        public $local_sections_custom_css = '';
-        public $global_sections_custom_css = '';
+        public $local_levels_custom_css = '';
+        public $global_levels_custom_css = '';
 
         // October 2020
         public $rendering = false;//<= set to true when rendering NB content
@@ -2385,7 +2389,7 @@ if ( !class_exists( 'SEK_Front_Construct' ) ) :
             // MAYBE REGISTER PRO UPSELL MODUlES
             add_filter('nb_level_module_collection', function( $module_collection ) {
                 if ( is_array($module_collection) && ( sek_is_pro() || defined('NIMBLE_PRO_UPSELL_ON') && NIMBLE_PRO_UPSELL_ON ) ) {
-                    array_push($module_collection, 'sek_level_cust_css_section' );
+                    array_push($module_collection, 'sek_level_cust_css_level' );
                     array_push($module_collection, 'sek_level_animation_module' );
                 }
                 return $module_collection;
@@ -3399,9 +3403,9 @@ if ( !class_exists( 'SEK_Front_Assets' ) ) :
             if ( !skp_is_customizing() && !Nimble_Manager()->page_has_local_or_global_sections )
               return;
             $fonts = [
-                'fa-brands' => 'fa-brands-400.woff2?5.15.2',
-                'fa-regular' => 'fa-regular-400.woff2?5.15.2',
-                'fa-solid' => 'fa-solid-900.woff2?5.15.2'
+                'fa-brands' => 'fa-brands-400.woff2?v=5.15.2',
+                'fa-regular' => 'fa-regular-400.woff2?v=5.15.2',
+                'fa-solid' => 'fa-solid-900.woff2?v=5.15.2'
             ];
             ?>
               <?php foreach( $fonts as $id => $name ) : ?>
@@ -3414,6 +3418,7 @@ if ( !class_exists( 'SEK_Front_Assets' ) ) :
                         href : "<?php echo $font_url; ?>",
                         type : 'font/woff2',
                         //onEvent : 'nb-docready',
+                        //eventOnLoad : 'nb-font-awesome-preloaded',
                         scriptEl : document.getElementById('<?php echo "nb-load-{$id}"; ?>')
                       });
                   });
@@ -3553,7 +3558,7 @@ if ( !class_exists( 'SEK_Front_Assets' ) ) :
             if ( !skp_is_customizing() && !Nimble_Manager()->page_has_local_or_global_sections )
               return;
             ?>
-            <script id="nimble-app-init">window.nb_={},function(e,t){if(window.nb_={isArray:function(e){return Array.isArray(e)||"[object Array]"===toString.call(e)},inArray:function(e,t){return!(!nb_.isArray(e)||nb_.isUndefined(t))&&e.indexOf(t)>-1},isUndefined:function(e){return void 0===e},isObject:function(e){var t=typeof e;return"function"===t||"object"===t&&!!e},errorLog:function(){nb_.isUndefined(console)||"function"!=typeof window.console.log||console.log.apply(console,arguments)},hasPreloadSupport:function(e){var t=document.createElement("link").relList;return!(!t||!t.supports)&&t.supports("preload")},listenTo:function(e,t){nb_.eventsListenedTo.push(e);var n={"nb-jquery-loaded":function(){return"undefined"!=typeof jQuery},"nb-app-ready":function(){return void 0!==window.nb_&&nb_.wasListenedTo("nb-jquery-loaded")},"nb-jmp-parsed":function(){return"undefined"!=typeof jQuery&&void 0!==jQuery.fn.magnificPopup},"nb-main-swiper-parsed":function(){return void 0!==window.Swiper}},o=function(o){nb_.isUndefined(n[e])||!1!==n[e]()?t():nb_.errorLog("Nimble error => an event callback could not be fired because conditions not met => ",e,nb_.eventsListenedTo,t)};"function"==typeof t?nb_.wasEmitted(e)?o():document.addEventListener(e,o):nb_.errorLog("Nimble error => listenTo func param is not a function for event => ",e)},eventsEmitted:[],eventsListenedTo:[],emit:function(e,t){if(!(nb_.isUndefined(t)||t.fire_once)||!nb_.wasEmitted(e)){var n=document.createEvent("Event");n.initEvent(e,!0,!0),document.dispatchEvent(n),nb_.eventsEmitted.push(e)}},wasListenedTo:function(e){return"string"==typeof e&&nb_.inArray(nb_.eventsListenedTo,e)},wasEmitted:function(e){return"string"==typeof e&&nb_.inArray(nb_.eventsEmitted,e)},isInScreen:function(e){if(!nb_.isObject(e))return!1;var t=e.getBoundingClientRect(),n=Math.max(document.documentElement.clientHeight,window.innerHeight);return!(t.bottom<0||t.top-n>=0)},isCustomizing:function(){return!1},isLazyLoadEnabled:function(){return!nb_.isCustomizing()&&!1},preloadOrDeferAsset:function(e){if(e=e||{},nb_.preloadedAssets=nb_.preloadedAssets||[],!nb_.inArray(nb_.preloadedAssets,e.id)){var t,n=document.getElementsByTagName("head")[0],o=function(){if("style"===e.as)this.setAttribute("rel","stylesheet"),this.setAttribute("type","text/css"),this.setAttribute("media","all");else{var t=document.createElement("script");t.setAttribute("src",e.href),t.setAttribute("id",e.id),"script"===e.as&&t.setAttribute("defer","defer"),n.appendChild(t),this&&this.parentNode&&this.parentNode.removeChild(this)}e.eventOnLoad&&nb_.emit(e.eventOnLoad)};("font"!==e.as||nb_.hasPreloadSupport())&&(t=document.createElement("link"),"script"===e.as?e.onEvent?nb_.listenTo(e.onEvent,function(){o.call(t)}):o.call(t):(t.setAttribute("href",e.href),"style"===e.as?t.setAttribute("rel",nb_.hasPreloadSupport()?"preload":"stylesheet"):"font"===e.as&&nb_.hasPreloadSupport()&&t.setAttribute("rel","preload"),t.setAttribute("id",e.id),t.setAttribute("as",e.as),"font"===e.as&&(t.setAttribute("type",e.type),t.setAttribute("crossorigin","anonymous")),t.onload=function(){this.onload=null,"font"!==e.as&&(e.onEvent?nb_.listenTo(e.onEvent,function(){o.call(t)}):o.call(t))},t.onerror=function(t){nb_.errorLog("Nimble preloadOrDeferAsset error",t,e)}),n.appendChild(t),nb_.preloadedAssets.push(e.id),e.scriptEl&&e.scriptEl.parentNode&&e.scriptEl.parentNode.removeChild(e.scriptEl))}},mayBeRevealBG:function(){this.getAttribute("data-sek-src")&&(this.setAttribute("style",'background-image:url("'+this.getAttribute("data-sek-src")+'")'),this.className+=" sek-lazy-loaded",this.querySelectorAll(".sek-css-loader").forEach(function(e){nb_.isObject(e)&&e.parentNode.removeChild(e)}))}},window.NodeList&&!NodeList.prototype.forEach&&(NodeList.prototype.forEach=function(e,t){t=t||window;for(var n=0;n<this.length;n++)e.call(t,this[n],n,this)}),nb_.listenTo("nb-docready",function(){var e=document.querySelectorAll("div.sek-has-bg");!nb_.isObject(e)||e.length<1||e.forEach(function(e){nb_.isObject(e)&&(window.sekFrontLocalized&&window.sekFrontLocalized.lazyload_enabled?nb_.isInScreen(e)&&nb_.mayBeRevealBG.call(e):nb_.mayBeRevealBG.call(e))})}),"complete"===document.readyState||"loading"!==document.readyState&&!document.documentElement.doScroll)nb_.emit("nb-docready");else{var n=function(){nb_.wasEmitted("nb-docready")||nb_.emit("nb-docready")};document.addEventListener("DOMContentLoaded",n),window.addEventListener("load",n)}}(window,document);</script>
+            <script id="nimble-app-init">window.nb_={},function(e,t){if(window.nb_={isArray:function(e){return Array.isArray(e)||"[object Array]"===toString.call(e)},inArray:function(e,t){return!(!nb_.isArray(e)||nb_.isUndefined(t))&&e.indexOf(t)>-1},isUndefined:function(e){return void 0===e},isObject:function(e){var t=typeof e;return"function"===t||"object"===t&&!!e},errorLog:function(){nb_.isUndefined(console)||"function"!=typeof window.console.log||console.log.apply(console,arguments)},hasPreloadSupport:function(e){var t=document.createElement("link").relList;return!(!t||!t.supports)&&t.supports("preload")},listenTo:function(e,t){nb_.eventsListenedTo.push(e);var n={"nb-jquery-loaded":function(){return"undefined"!=typeof jQuery},"nb-app-ready":function(){return void 0!==window.nb_&&nb_.wasListenedTo("nb-jquery-loaded")},"nb-jmp-parsed":function(){return"undefined"!=typeof jQuery&&void 0!==jQuery.fn.magnificPopup},"nb-main-swiper-parsed":function(){return void 0!==window.Swiper}},o=function(o){nb_.isUndefined(n[e])||!1!==n[e]()?t():nb_.errorLog("Nimble error => an event callback could not be fired because conditions not met => ",e,nb_.eventsListenedTo,t)};"function"==typeof t?nb_.wasEmitted(e)?o():document.addEventListener(e,o):nb_.errorLog("Nimble error => listenTo func param is not a function for event => ",e)},eventsEmitted:[],eventsListenedTo:[],emit:function(e,t){if(!(nb_.isUndefined(t)||t.fire_once)||!nb_.wasEmitted(e)){var n=document.createEvent("Event");n.initEvent(e,!0,!0),document.dispatchEvent(n),nb_.eventsEmitted.push(e)}},wasListenedTo:function(e){return"string"==typeof e&&nb_.inArray(nb_.eventsListenedTo,e)},wasEmitted:function(e){return"string"==typeof e&&nb_.inArray(nb_.eventsEmitted,e)},isInScreen:function(e){if(!nb_.isObject(e))return!1;var t=e.getBoundingClientRect(),n=Math.max(document.documentElement.clientHeight,window.innerHeight);return!(t.bottom<0||t.top-n>=0)},isCustomizing:function(){return!1},isLazyLoadEnabled:function(){return!nb_.isCustomizing()&&!1},preloadOrDeferAsset:function(e){if(e=e||{},nb_.preloadedAssets=nb_.preloadedAssets||[],!nb_.inArray(nb_.preloadedAssets,e.id)){var t,n=document.getElementsByTagName("head")[0],o=function(){if("style"===e.as)this.setAttribute("rel","stylesheet"),this.setAttribute("type","text/css"),this.setAttribute("media","all");else{var t=document.createElement("script");t.setAttribute("src",e.href),t.setAttribute("id",e.id),"script"===e.as&&t.setAttribute("defer","defer"),n.appendChild(t),this&&this.parentNode&&this.parentNode.removeChild(this)}e.eventOnLoad&&nb_.emit(e.eventOnLoad)};("font"!==e.as||nb_.hasPreloadSupport())&&(t=document.createElement("link"),"script"===e.as?e.onEvent?nb_.listenTo(e.onEvent,function(){o.call(t)}):o.call(t):(t.setAttribute("href",e.href),"style"===e.as?t.setAttribute("rel",nb_.hasPreloadSupport()?"preload":"stylesheet"):"font"===e.as&&nb_.hasPreloadSupport()&&t.setAttribute("rel","preload"),t.setAttribute("id",e.id),t.setAttribute("as",e.as),"font"===e.as&&(t.setAttribute("type",e.type),t.setAttribute("crossorigin","anonymous")),t.onload=function(){this.onload=null,"font"!==e.as?e.onEvent?nb_.listenTo(e.onEvent,function(){o.call(t)}):o.call(t):e.eventOnLoad&&nb_.emit(e.eventOnLoad)},t.onerror=function(t){nb_.errorLog("Nimble preloadOrDeferAsset error",t,e)}),n.appendChild(t),nb_.preloadedAssets.push(e.id),e.scriptEl&&e.scriptEl.parentNode&&e.scriptEl.parentNode.removeChild(e.scriptEl))}},mayBeRevealBG:function(){this.getAttribute("data-sek-src")&&(this.setAttribute("style",'background-image:url("'+this.getAttribute("data-sek-src")+'")'),this.className+=" sek-lazy-loaded",this.querySelectorAll(".sek-css-loader").forEach(function(e){nb_.isObject(e)&&e.parentNode.removeChild(e)}))}},window.NodeList&&!NodeList.prototype.forEach&&(NodeList.prototype.forEach=function(e,t){t=t||window;for(var n=0;n<this.length;n++)e.call(t,this[n],n,this)}),nb_.listenTo("nb-docready",function(){var e=document.querySelectorAll("div.sek-has-bg");!nb_.isObject(e)||e.length<1||e.forEach(function(e){nb_.isObject(e)&&(window.sekFrontLocalized&&window.sekFrontLocalized.lazyload_enabled?nb_.isInScreen(e)&&nb_.mayBeRevealBG.call(e):nb_.mayBeRevealBG.call(e))})}),"complete"===document.readyState||"loading"!==document.readyState&&!document.documentElement.doScroll)nb_.emit("nb-docready");else{var n=function(){nb_.wasEmitted("nb-docready")||nb_.emit("nb-docready")};document.addEventListener("DOMContentLoaded",n),window.addEventListener("load",n)}}(window,document);</script>
             <?php
         }
 
@@ -4171,40 +4176,16 @@ if ( !class_exists( 'SEK_Front_Render' ) ) :
             }
 
             $location_id = current_filter();
-            // why check if did_action( ... ) ?
-            //  => A location can be rendered only once
-            // => for loop_start and loop_end, checking with is_main_query() is not enough because the main loop might be used 2 times in the same page
-            // => for a custom location, it can be rendered by do_action() somewhere, and be rendered also with render_nimble_locations()
-            // @see issue with Twenty Seventeen here : https://github.com/presscustomizr/nimble-builder/issues/14
-            if ( did_action( "sek_before_location_{$location_id}" ) )
-              return;
-
-            do_action( "sek_before_location_{$location_id}" );
             $this->_render_seks_for_location( $location_id );
-            do_action( "sek_after_location_{$location_id}" );
         }
 
         // hook : 'the_content'::-9999
         function sek_schedule_sektion_rendering_before_content( $html ) {
-            // Disable because https://github.com/presscustomizr/nimble-builder/issues/380
-            // No regression ?
-
-            // if ( did_action( 'sek_before_location_before_content' ) )
-            //   return $html;
-
-            do_action( 'sek_before_location_before_content' );
             return $this->_filter_the_content( $html, 'before_content' );
         }
 
         // hook : 'the_content'::9999
         function sek_schedule_sektion_rendering_after_content( $html ) {
-            // Disable because https://github.com/presscustomizr/nimble-builder/issues/380
-            // No regression ?
-
-            // if ( did_action( 'sek_before_location_after_content' ) )
-            //   return $html;
-
-            do_action( 'sek_before_location_after_content' );
             return $this->_filter_the_content( $html, 'after_content' );
         }
 
@@ -4228,12 +4209,23 @@ if ( !class_exists( 'SEK_Front_Render' ) ) :
         // the $location_data can be provided. Typically when using the function render_content_sections_for_nimble_template in the Nimble page template.
         // @param $skope_id added april 2020 for https://github.com/presscustomizr/nimble-builder/issues/657
         public function _render_seks_for_location( $location_id = '', $location_data = array(), $skope_id = '' ) {
+            // why check if did_action( ... ) ?
+            //  => A location can be rendered only once
+            // => for loop_start and loop_end, checking with is_main_query() is not enough because the main loop might be used 2 times in the same page
+            // => for a custom location, it can be rendered by do_action() somewhere, and be rendered also with render_nimble_locations()
+            // @see issue with Twenty Seventeen here : https://github.com/presscustomizr/nimble-builder/issues/14
+            if ( is_string( $location_id) && did_action( "sek_before_location_{$location_id}" ) )
+              return;
+
             $all_locations = sek_get_locations();
 
             if ( !array_key_exists( $location_id, $all_locations ) ) {
                 sek_error_log( __CLASS__ . '::' . __FUNCTION__ . ' Error => the location ' . $location_id . ' is not registered in sek_get_locations()');
                 return;
             }
+
+            do_action( "sek_before_location_{$location_id}" );
+
             $locationSettingValue = array();
             $is_global_location = sek_is_global_location( $location_id );
             if ( empty( $location_data ) ) {
@@ -4270,7 +4262,10 @@ if ( !class_exists( 'SEK_Front_Render' ) ) :
             } else {
                 error_log( __CLASS__ . ' :: ' . __FUNCTION__ .' => sek_get_skoped_seks() should always return an array().');
             }
-        }
+
+            do_action( "sek_after_location_{$location_id}" );
+
+        }//_render_seks_for_location(
 
 
 
@@ -4311,13 +4306,11 @@ if ( !class_exists( 'SEK_Front_Render' ) ) :
             // }
 
             //sek_error_log( __FUNCTION__ . ' sek_get_skoped_seks(  ', sek_get_skoped_seks() );
-
             foreach( $locations as $location_id ) {
                 if ( !is_string( $location_id ) || empty( $location_id ) ) {
                     sek_error_log( __FUNCTION__ . ' => error => a location_id is not valid in the provided locations', $locations );
                     continue;
                 }
-
                 // why check if did_action( ... ) ?
                 // => A location can be rendered only once
                 // => for loop_start and loop_end, checking with is_main_query() is not enough because the main loop might be used 2 times in the same page
@@ -4329,20 +4322,15 @@ if ( !class_exists( 'SEK_Front_Render' ) ) :
                 $is_global = sek_is_global_location( $location_id );
                 $skope_id = $is_global ? NIMBLE_GLOBAL_SKOPE_ID : skp_get_skope_id();
                 $locationSettingValue = sek_get_skoped_seks( $skope_id, $location_id );
-                //sek_error_log('$locationSettingValue ??? => ' . $location_id, $locationSettingValue );
                 if ( !is_null( $options[ 'fallback_location' ]) ) {
                     // We don't need to render the locations with no sections
                     // But we need at least one location : let's always render loop_start.
                     // => so if the user switches from the nimble_template to the default theme one, the loop_start section will always be rendered.
                     if ( $options[ 'fallback_location' ] === $location_id || ( is_array( $locationSettingValue ) && !empty( $locationSettingValue['collection'] ) ) ) {
-                        do_action( "sek_before_location_{$location_id}" );
                         Nimble_Manager()->_render_seks_for_location( $location_id, $locationSettingValue );
-                        do_action( "sek_after_location_{$location_id}" );
                     }
                 } else {
-                    do_action( "sek_before_location_{$location_id}" );
                     Nimble_Manager()->_render_seks_for_location( $location_id, $locationSettingValue );
-                    do_action( "sek_after_location_{$location_id}" );
                 }
 
             }//render_nimble_locations()
@@ -4468,7 +4456,7 @@ if ( !class_exists( 'SEK_Front_Render' ) ) :
                     ?>
                       <?php if ( skp_is_customizing() || ( !skp_is_customizing() && !empty( $collection ) ) ) : ?>
                             <?php
-                              Nimble_Manager()->nimble_content_is_printed_on_this_page = true;
+                              Nimble_Manager()->nimble_customizing_or_content_is_printed_on_this_page = true;
                               printf( '<div class="sektion-wrapper nb-loc %6$s" data-sek-level="location" data-sek-id="%1$s" %2$s %3$s %4$s %5$s>',
                                   $id,
                                   sprintf('data-sek-is-global-location="%1$s"', sek_is_global_location( $id ) ? 'true' : 'false'),
@@ -5021,7 +5009,7 @@ if ( !class_exists( 'SEK_Front_Render' ) ) :
                     $bg_image_id_or_url = '';
                     
                     // Feb 2021
-                    // First check if user wants to use the current post thumbnail
+                    // First check if user wants to use the contextual post thumbnail
                     // Fallback on the regular image background if not
                     if ( $use_post_thumbnail_bg ) {
                         $current_post_id = sek_get_post_id_on_front_and_when_customizing();
