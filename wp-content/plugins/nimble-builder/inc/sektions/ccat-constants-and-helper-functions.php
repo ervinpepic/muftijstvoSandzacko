@@ -51,7 +51,7 @@ if ( !defined( 'NIMBLE_DETACHED_TINYMCE_TEXTAREA_ID') ) { define( 'NIMBLE_DETACH
 // TRANSIENTS ID
 if ( !defined( 'NIMBLE_WELCOME_NOTICE_ID' ) ) { define ( 'NIMBLE_WELCOME_NOTICE_ID', 'nimble-welcome-notice-12-2018' ); }
 //mt_rand(0, 65535) . 'test-nimble-feedback-notice-04-2019'
-if ( !defined( 'NIMBLE_FEEDBACK_NOTICE_ID' ) ) { define ( 'NIMBLE_FEEDBACK_NOTICE_ID', 'nimble-feedback-notice-04-2019' ); }
+if ( !defined( 'NIMBLE_FEEDBACK_NOTICE_ID' ) ) { define ( 'NIMBLE_FEEDBACK_NOTICE_ID', 'nimble-feedback-notice-06-2021' ); }
 if ( !defined( 'NIMBLE_FAWESOME_TRANSIENT_ID' ) ) { define ( 'NIMBLE_FAWESOME_TRANSIENT_ID', 'sek_font_awesome_february_2020' ); }
 if ( !defined( 'NIMBLE_GFONTS_TRANSIENT_ID' ) ) { define ( 'NIMBLE_GFONTS_TRANSIENT_ID', 'sek_gfonts_march_2020' ); }
 if ( !defined( 'NIMBLE_FEEDBACK_STATUS_TRANSIENT_ID' ) ) { define ( 'NIMBLE_FEEDBACK_STATUS_TRANSIENT_ID', 'nimble_feedback_status' ); }
@@ -964,14 +964,6 @@ function sek_get_module_collection() {
           'is_pro' => !sek_is_pro(),
           'active' => sek_is_pro()
         ),
-        // array(
-        //     'content-type' => 'module',
-        //     'content-id' => 'czr_advanced_list_module',
-        //     'title' => __( 'Advanced List', 'text_doma' ),
-        //     'icon' => 'Nimble__advanced_list_icon.svg',
-        //     'is_pro' => !sek_is_pro(),
-        //     'active' => sek_is_pro() && defined( 'NB_PRO_BETA_ADVANCED_LIST_MODULE') && NB_PRO_BETA_ADVANCED_LIST_MODULE
-        // ),
 
         array(
           'content-type' => 'module',
@@ -990,6 +982,14 @@ function sek_get_module_collection() {
           'content-id' => 'czr_accordion_module',
           'title' => __( 'Accordion', 'nimble-builder' ),
           'icon' => 'Nimble_accordion_icon.svg'
+        ),
+        array(
+            'content-type' => 'module',
+            'content-id' => 'czr_advanced_list_module',
+            'title' => __( 'Advanced List', 'nimble-builder' ),
+            'icon' => 'Nimble__advanced_list_icon.svg',
+            'is_pro' => !sek_is_pro(),
+            'active' => sek_is_pro()
         ),
         array(
           'content-type' => 'module',
@@ -1862,8 +1862,8 @@ function sek_get_local_option_value_without_inheritance( $option_name = '', $sko
         sek_error_log( __FUNCTION__ . ' => invalid option name' );
         return array();
     }
-    if ( !skp_is_customizing() && did_action('nimble_front_classes_ready') && '_not_cached_yet_' !== Nimble_Manager()->local_options ) {
-        $local_options = Nimble_Manager()->local_options;
+    if ( !skp_is_customizing() && did_action('nimble_front_classes_ready') && '_not_cached_yet_' !== Nimble_Manager()->local_options_without_tmpl_inheritance ) {
+        $local_options_without_tmpl_inheritance = Nimble_Manager()->local_options_without_tmpl_inheritance;
     } else {
         // use the provided skope_id if in the signature
         $skope_id = ( !empty( $skope_id ) && is_string( $skope_id ))? $skope_id : skp_get_skope_id();
@@ -1878,15 +1878,15 @@ function sek_get_local_option_value_without_inheritance( $option_name = '', $sko
             );
         }
 
-        $local_options = ( is_array( $localSkopeNimble ) && !empty( $localSkopeNimble['local_options'] ) && is_array( $localSkopeNimble['local_options'] ) ) ? $localSkopeNimble['local_options'] : array();
+        $local_options_without_tmpl_inheritance = ( is_array( $localSkopeNimble ) && !empty( $localSkopeNimble['local_options'] ) && is_array( $localSkopeNimble['local_options'] ) ) ? $localSkopeNimble['local_options'] : array();
         // Cache only after 'wp' && 'nimble_front_classes_ready'
         // never cache when doing ajax
         if ( did_action('nimble_front_classes_ready') && did_action('wp') && !defined('DOING_AJAX') )  {
-            Nimble_Manager()->local_options = $local_options;
+            Nimble_Manager()->local_options_without_tmpl_inheritance = $local_options_without_tmpl_inheritance;
         }
     }
     // maybe normalizes with default values
-    $values = ( !empty( $local_options ) && !empty( $local_options[ $option_name ] ) ) ? $local_options[ $option_name ] : null;
+    $values = ( !empty( $local_options_without_tmpl_inheritance ) && !empty( $local_options_without_tmpl_inheritance[ $option_name ] ) ) ? $local_options_without_tmpl_inheritance[ $option_name ] : null;
     if ( did_action('nimble_front_classes_ready') ) {
         $values = sek_normalize_local_options_with_defaults( $option_name, $values );
     }
@@ -2842,25 +2842,22 @@ function sek_count_not_empty_sections_in_page( $seks_data, $count = 0 ) {
 // Invoked when printing the review note in the plugin table, in the 'plugin_row_meta'
 // Since this is a quite heavy check, NB stores it in a 7 days long transient
 function sek_get_feedback_notif_status() {
-    // if ( sek_feedback_notice_is_dismissed() )
-    //   return;
-    // if ( sek_feedback_notice_is_postponed() )
-    //   return;
+    if ( sek_feedback_notice_is_dismissed() )
+      return;
 
     // Check if we already stored the status in a transient first
-
     $transient_name = NIMBLE_FEEDBACK_STATUS_TRANSIENT_ID;
     $transient_value = get_transient( $transient_name );
     if ( false != $transient_value ) {
-        return 'eligible' === $transient_value;
+        return $transient_value;
     }
 
     // If transient not set or expired, let's set it and return the feedback status
-    $start_version = get_option( 'nimble_started_with_version', NIMBLE_VERSION );
+    // $start_version = get_option( 'nimble_started_with_version', NIMBLE_VERSION );
 
     // Bail if user started after v2.1.20, October 22nd 2020 ( set on November 23th 2020 )
-    if ( !version_compare( $start_version, '2.1.20', '<=' ) )
-      return;
+    // if ( !version_compare( $start_version, '3.1.12', '<=' ) )
+    //   return;
 
     $sek_post_query_vars = array(
         'post_type'              => NIMBLE_CPT,
@@ -2926,19 +2923,6 @@ function sek_populate_list_of_modules_used( $seks_data ) {
             }
         }
     }
-}
-
-// Nov 2020 =
-function sek_feedback_notice_is_dismissed() {
-    $dismissed = get_user_meta( get_current_user_id(), 'dismissed_wp_pointers', true );
-    $dismissed_array = array_filter( explode( ',', (string) $dismissed ) );
-    return in_array( NIMBLE_FEEDBACK_NOTICE_ID, $dismissed_array );
-}
-
-// @uses get_user_meta( get_current_user_id(), 'nimble_user_transients', true );
-// populated in ajax class
-function sek_feedback_notice_is_postponed() {
-    return 'maybe_later' === get_transient( NIMBLE_FEEDBACK_NOTICE_ID );
 }
 
 ?><?php
@@ -4026,6 +4010,15 @@ function sek_get_raw_section_registration_params() {
         'sek_footer_sec_picker_module' => [
             'name' => __('Footer sections', 'nimble-builder'),
             'section_collection' => array(
+                array(
+                    'content-id' => 'footer_pro_one',
+                    'title' => __('simple 2 columns footer', 'nimble-builder' ),
+                    'thumb' => 'footer_pro_one.jpg',
+                    'section_type' => 'footer',
+                    'height' => '75px',
+                    'active' => sek_is_pro(),
+                    'is_pro' => true
+                ),
                 array(
                     'content-id' => 'footer_with_social_links_one',
                     'title' => __('footer with dynamic date, site title and social links', 'nimble-builder' ),

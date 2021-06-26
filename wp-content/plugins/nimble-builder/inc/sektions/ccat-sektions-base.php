@@ -2174,6 +2174,7 @@ if ( !class_exists( 'SEK_Front_Construct' ) ) :
 
         // store the local and global options
         public $local_options = '_not_cached_yet_';
+        public $local_options_without_tmpl_inheritance = '_not_cached_yet_';//Introduced for site templates, when using function sek_is_inheritance_locally_disabled()
         public $global_nimble_options = '_not_cached_yet_';
 
         public $img_smartload_enabled = 'not_cached';
@@ -3814,17 +3815,6 @@ if ( !class_exists( 'SEK_Front_Assets_Customizer_Preview' ) ) :
                 $media = 'all'
             );
             wp_enqueue_script( 'jquery-ui-resizable' );
-
-            // March 2020
-            // if ( sek_get_feedback_notif_status() ) {
-            //     wp_enqueue_script(
-            //       'sek-confettis',
-            //       sprintf( '%1$s/assets/front/css/libs/confetti.browser.min.js', NIMBLE_BASE_URL ),
-            //       array(),
-            //       NIMBLE_ASSETS_VERSION,
-            //       true
-            //     );
-            // }
         }
 
 
@@ -4069,8 +4059,10 @@ if ( !class_exists( 'SEK_Front_Render' ) ) :
                 }
                 array_unshift( $classes, !sek_local_skope_has_been_customized() ? 'nimble-no-local-data-' . $skope_id : 'nimble-has-local-data-' . $skope_id );
             }
-
-            array_unshift( $classes, sek_is_pro() ? 'nimble-builder-pro-' . str_replace('.', '-', NB_PRO_VERSION ) : 'nimble-builder-' . str_replace('.', '-', NIMBLE_VERSION ) );
+            if ( sek_is_pro() ) {
+                array_unshift( $classes, 'nb-pro-' . str_replace('.', '-', NB_PRO_VERSION ) );
+            }
+            array_unshift( $classes, 'nb-' . str_replace('.', '-', NIMBLE_VERSION ) );
 
             return $classes;
         }
