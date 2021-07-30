@@ -1294,7 +1294,15 @@ class Sek_Dyn_CSS_Handler {
 
         if ( !file_exists( $index_path = wp_normalize_path( trailingslashit( $base_uri ) . 'index.php' ) ) ) {
             // predefined mode settings for WP files
-            $wp_filesystem->put_contents( $index_path, "<?php\n// Silence is golden.\n", FS_CHMOD_FILE );
+            // Make sure NB uses the proper FS_CHMOD_DIR value
+            // fixes https://github.com/presscustomizr/nimble-builder/issues/862
+            // doc : https://wordpress.org/support/article/editing-wp-config-php/#override-of-default-file-permissions
+            // doc : https://wordpress.stackexchange.com/questions/253274/use-of-undefined-constant-fs-chmod-dir-assumed-fs-chmod-dir
+            $chmod_dir = ( 0755 & ~ umask() );
+            if ( defined( 'FS_CHMOD_DIR' ) ) {
+                $chmod_dir = FS_CHMOD_DIR;
+            }
+            $wp_filesystem->put_contents( $index_path, "<?php\n// Silence is golden.\n", $chmod_dir );
         }
 
 
@@ -2247,6 +2255,7 @@ if ( !class_exists( 'SEK_Front_Construct' ) ) :
           //'sek_level_section_layout_module',<// deactivated for now. Replaced by sek_level_width_section
           'sek_level_height_module',
           'sek_level_spacing_module',
+          'sek_level_spacing_module_for_columns',
           'sek_level_width_module',
           'sek_level_width_column',
           'sek_level_width_section',
@@ -2315,7 +2324,8 @@ if ( !class_exists( 'SEK_Front_Construct' ) ) :
 
             'czr_social_icons_module' => 'social-icons-module',
             'czr_button_module' => 'button-module',
-            'czr_heading_module' => 'heading-module'
+            'czr_heading_module' => 'heading-module',
+            'czr_gallery_module' => 'gallery-module',
         ];
 
         // March 2020, for https://github.com/presscustomizr/nimble-builder/issues/629
@@ -2399,13 +2409,22 @@ if ( !class_exists( 'SEK_Front_Construct' ) ) :
             // see #838
             // prevents using persistent cache object systems like Memcached which override the default WP class WP_Object_Cache () which is normally refreshed on each page load )
             add_action('init', array( $this, 'sek_clear_cached_objects_when_customizing') );
+
+            // FLUSH CACHE OBJECT ON POST SAVE / UPDATE
+            // for https://github.com/presscustomizr/nimble-builder/issues/867
+            add_action( 'save_post', array( $this, 'sek_flush_object_cache_on_post_update') );
         }//__construct
 
+        // @init
         public function sek_clear_cached_objects_when_customizing() {
             if ( skp_is_customizing() ) {
                 // Make sure cached objects are cleaned
                 wp_cache_flush();
             }
+        }
+        // @save_post
+        function sek_flush_object_cache_on_post_update() {
+          wp_cache_flush();
         }
 
         // @fired @hook 'widgets_init'
@@ -2528,6 +2547,12 @@ if ( !class_exists( 'SEK_Front_Construct' ) ) :
                 'czr_accordion_module',
                 'czr_accordion_collection_child',
                 'czr_accordion_opts_child'
+              ),
+
+              'czr_gallery_module' => array(
+                'czr_gallery_module',
+                'czr_gallery_collection_child',
+                'czr_gallery_opts_child'
               ),
 
               'czr_shortcode_module',
@@ -3559,7 +3584,7 @@ if ( !class_exists( 'SEK_Front_Assets' ) ) :
             if ( !skp_is_customizing() && !Nimble_Manager()->page_has_local_or_global_sections )
               return;
             ?>
-            <script id="nimble-app-init">window.nb_={},function(e,t){if(window.nb_={isArray:function(e){return Array.isArray(e)||"[object Array]"===toString.call(e)},inArray:function(e,t){return!(!nb_.isArray(e)||nb_.isUndefined(t))&&e.indexOf(t)>-1},isUndefined:function(e){return void 0===e},isObject:function(e){var t=typeof e;return"function"===t||"object"===t&&!!e},errorLog:function(){nb_.isUndefined(console)||"function"!=typeof window.console.log||console.log.apply(console,arguments)},hasPreloadSupport:function(e){var t=document.createElement("link").relList;return!(!t||!t.supports)&&t.supports("preload")},listenTo:function(e,t){nb_.eventsListenedTo.push(e);var n={"nb-jquery-loaded":function(){return"undefined"!=typeof jQuery},"nb-app-ready":function(){return void 0!==window.nb_&&nb_.wasListenedTo("nb-jquery-loaded")},"nb-jmp-parsed":function(){return"undefined"!=typeof jQuery&&void 0!==jQuery.fn.magnificPopup},"nb-main-swiper-parsed":function(){return void 0!==window.Swiper}},o=function(o){nb_.isUndefined(n[e])||!1!==n[e]()?t():nb_.errorLog("Nimble error => an event callback could not be fired because conditions not met => ",e,nb_.eventsListenedTo,t)};"function"==typeof t?nb_.wasEmitted(e)?o():document.addEventListener(e,o):nb_.errorLog("Nimble error => listenTo func param is not a function for event => ",e)},eventsEmitted:[],eventsListenedTo:[],emit:function(e,t){if(!(nb_.isUndefined(t)||t.fire_once)||!nb_.wasEmitted(e)){var n=document.createEvent("Event");n.initEvent(e,!0,!0),document.dispatchEvent(n),nb_.eventsEmitted.push(e)}},wasListenedTo:function(e){return"string"==typeof e&&nb_.inArray(nb_.eventsListenedTo,e)},wasEmitted:function(e){return"string"==typeof e&&nb_.inArray(nb_.eventsEmitted,e)},isInScreen:function(e){if(!nb_.isObject(e))return!1;var t=e.getBoundingClientRect(),n=Math.max(document.documentElement.clientHeight,window.innerHeight);return!(t.bottom<0||t.top-n>=0)},isCustomizing:function(){return!1},isLazyLoadEnabled:function(){return!nb_.isCustomizing()&&!1},preloadOrDeferAsset:function(e){if(e=e||{},nb_.preloadedAssets=nb_.preloadedAssets||[],!nb_.inArray(nb_.preloadedAssets,e.id)){var t,n=document.getElementsByTagName("head")[0],o=function(){if("style"===e.as)this.setAttribute("rel","stylesheet"),this.setAttribute("type","text/css"),this.setAttribute("media","all");else{var t=document.createElement("script");t.setAttribute("src",e.href),t.setAttribute("id",e.id),"script"===e.as&&t.setAttribute("defer","defer"),n.appendChild(t),this&&this.parentNode&&this.parentNode.removeChild(this)}e.eventOnLoad&&nb_.emit(e.eventOnLoad)};("font"!==e.as||nb_.hasPreloadSupport())&&(t=document.createElement("link"),"script"===e.as?e.onEvent?nb_.listenTo(e.onEvent,function(){o.call(t)}):o.call(t):(t.setAttribute("href",e.href),"style"===e.as?t.setAttribute("rel",nb_.hasPreloadSupport()?"preload":"stylesheet"):"font"===e.as&&nb_.hasPreloadSupport()&&t.setAttribute("rel","preload"),t.setAttribute("id",e.id),t.setAttribute("as",e.as),"font"===e.as&&(t.setAttribute("type",e.type),t.setAttribute("crossorigin","anonymous")),t.onload=function(){this.onload=null,"font"!==e.as?e.onEvent?nb_.listenTo(e.onEvent,function(){o.call(t)}):o.call(t):e.eventOnLoad&&nb_.emit(e.eventOnLoad)},t.onerror=function(t){nb_.errorLog("Nimble preloadOrDeferAsset error",t,e)}),n.appendChild(t),nb_.preloadedAssets.push(e.id),e.scriptEl&&e.scriptEl.parentNode&&e.scriptEl.parentNode.removeChild(e.scriptEl))}},mayBeRevealBG:function(){this.getAttribute("data-sek-src")&&(this.setAttribute("style",'background-image:url("'+this.getAttribute("data-sek-src")+'")'),this.className+=" sek-lazy-loaded",this.querySelectorAll(".sek-css-loader").forEach(function(e){nb_.isObject(e)&&e.parentNode.removeChild(e)}))}},window.NodeList&&!NodeList.prototype.forEach&&(NodeList.prototype.forEach=function(e,t){t=t||window;for(var n=0;n<this.length;n++)e.call(t,this[n],n,this)}),nb_.listenTo("nb-docready",function(){var e=document.querySelectorAll("div.sek-has-bg");!nb_.isObject(e)||e.length<1||e.forEach(function(e){nb_.isObject(e)&&(window.sekFrontLocalized&&window.sekFrontLocalized.lazyload_enabled?nb_.isInScreen(e)&&nb_.mayBeRevealBG.call(e):nb_.mayBeRevealBG.call(e))})}),"complete"===document.readyState||"loading"!==document.readyState&&!document.documentElement.doScroll)nb_.emit("nb-docready");else{var n=function(){nb_.wasEmitted("nb-docready")||nb_.emit("nb-docready")};document.addEventListener("DOMContentLoaded",n),window.addEventListener("load",n)}}(window,document);</script>
+            <script id="nimble-app-init">window.nb_={},function(e,t){if(window.nb_={isArray:function(e){return Array.isArray(e)||"[object Array]"===toString.call(e)},inArray:function(e,t){return!(!nb_.isArray(e)||nb_.isUndefined(t))&&e.indexOf(t)>-1},isUndefined:function(e){return void 0===e},isObject:function(e){var t=typeof e;return"function"===t||"object"===t&&!!e},errorLog:function(){nb_.isUndefined(console)||"function"!=typeof window.console.log||console.log.apply(console,arguments)},hasPreloadSupport:function(e){var t=document.createElement("link").relList;return!(!t||!t.supports)&&t.supports("preload")},listenTo:function(e,t){nb_.eventsListenedTo.push(e);var n={"nb-jquery-loaded":function(){return"undefined"!=typeof jQuery},"nb-app-ready":function(){return void 0!==window.nb_&&nb_.wasListenedTo("nb-jquery-loaded")},"nb-jmp-parsed":function(){return"undefined"!=typeof jQuery&&void 0!==jQuery.fn.magnificPopup},"nb-main-swiper-parsed":function(){return void 0!==window.Swiper}},o=function(o){nb_.isUndefined(n[e])||!1!==n[e]()?t():nb_.errorLog("Nimble error => an event callback could not be fired because conditions not met => ",e,nb_.eventsListenedTo,t)};"function"==typeof t?nb_.wasEmitted(e)?o():document.addEventListener(e,o):nb_.errorLog("Nimble error => listenTo func param is not a function for event => ",e)},eventsEmitted:[],eventsListenedTo:[],emit:function(e,t){if(!(nb_.isUndefined(t)||t.fire_once)||!nb_.wasEmitted(e)){var n=document.createEvent("Event");n.initEvent(e,!0,!0),document.dispatchEvent(n),nb_.eventsEmitted.push(e)}},wasListenedTo:function(e){return"string"==typeof e&&nb_.inArray(nb_.eventsListenedTo,e)},wasEmitted:function(e){return"string"==typeof e&&nb_.inArray(nb_.eventsEmitted,e)},isInScreen:function(e){if(!nb_.isObject(e))return!1;var t=e.getBoundingClientRect(),n=Math.max(document.documentElement.clientHeight,window.innerHeight);return!(t.bottom<0||t.top-n>=0)},isCustomizing:function(){return!1},isLazyLoadEnabled:function(){return!nb_.isCustomizing()&&!1},preloadOrDeferAsset:function(e){if(e=e||{},nb_.preloadedAssets=nb_.preloadedAssets||[],!nb_.inArray(nb_.preloadedAssets,e.id)){var t,n=document.getElementsByTagName("head")[0],o=function(){if("style"===e.as)this.setAttribute("rel","stylesheet"),this.setAttribute("type","text/css"),this.setAttribute("media","all");else{var t=document.createElement("script");t.setAttribute("src",e.href),t.setAttribute("id",e.id),"script"===e.as&&t.setAttribute("defer","defer"),n.appendChild(t),i.call(this)}e.eventOnLoad&&nb_.emit(e.eventOnLoad)},i=function(){if(this&&this.parentNode&&this.parentNode.contains(this))try{this.parentNode.removeChild(this)}catch(e){nb_.errorLog("NB error when removing a script el",el)}};("font"!==e.as||nb_.hasPreloadSupport())&&(t=document.createElement("link"),"script"===e.as?e.onEvent?nb_.listenTo(e.onEvent,function(){o.call(t)}):o.call(t):(t.setAttribute("href",e.href),"style"===e.as?t.setAttribute("rel",nb_.hasPreloadSupport()?"preload":"stylesheet"):"font"===e.as&&nb_.hasPreloadSupport()&&t.setAttribute("rel","preload"),t.setAttribute("id",e.id),t.setAttribute("as",e.as),"font"===e.as&&(t.setAttribute("type",e.type),t.setAttribute("crossorigin","anonymous")),t.onload=function(){this.onload=null,"font"!==e.as?e.onEvent?nb_.listenTo(e.onEvent,function(){o.call(t)}):o.call(t):e.eventOnLoad&&nb_.emit(e.eventOnLoad)},t.onerror=function(t){nb_.errorLog("Nimble preloadOrDeferAsset error",t,e)}),n.appendChild(t),nb_.preloadedAssets.push(e.id),i.call(e.scriptEl))}},mayBeRevealBG:function(){this.getAttribute("data-sek-src")&&(this.setAttribute("style",'background-image:url("'+this.getAttribute("data-sek-src")+'")'),this.className+=" sek-lazy-loaded",this.querySelectorAll(".sek-css-loader").forEach(function(e){nb_.isObject(e)&&e.parentNode.removeChild(e)}))}},window.NodeList&&!NodeList.prototype.forEach&&(NodeList.prototype.forEach=function(e,t){t=t||window;for(var n=0;n<this.length;n++)e.call(t,this[n],n,this)}),nb_.listenTo("nb-docready",function(){var e=document.querySelectorAll("div.sek-has-bg");!nb_.isObject(e)||e.length<1||e.forEach(function(e){nb_.isObject(e)&&(window.sekFrontLocalized&&window.sekFrontLocalized.lazyload_enabled?nb_.isInScreen(e)&&nb_.mayBeRevealBG.call(e):nb_.mayBeRevealBG.call(e))})}),"complete"===document.readyState||"loading"!==document.readyState&&!document.documentElement.doScroll)nb_.emit("nb-docready");else{var n=function(){nb_.wasEmitted("nb-docready")||nb_.emit("nb-docready")};document.addEventListener("DOMContentLoaded",n),window.addEventListener("load",n)}}(window,document);</script>
             <?php
         }
 
@@ -4237,7 +4262,26 @@ if ( !class_exists( 'SEK_Front_Render' ) ) :
                 remove_filter('the_content', array( $this, 'sek_schedule_sektion_rendering_after_content' ), NIMBLE_AFTER_CONTENT_FILTER_PRIORITY );
                 // rendering property allows us to determine if we're rendering NB content while filtering WP core functions, like the one of the lazy load attributes
                 Nimble_Manager()->rendering = true;
-                $this->render( $locationSettingValue, $location_id );
+
+                // Is paged ? ( when using post grid module ) => Don't cache
+                // Never use object caching when displaying paginated post grids
+                $pagination_query_var = (is_front_page() && 'page' == get_option( 'show_on_front' )) ? 'page' :'paged';
+                $paged = get_query_var($pagination_query_var);
+                if ( ( intval( $paged ) < 2 ) && !empty($skope_id) && !skp_is_customizing() && defined('NIMBLE_OBJECT_CACHE_ENABLED') && NIMBLE_OBJECT_CACHE_ENABLED ) {
+                    $cache_key = $location_id . '__in__' . $skope_id;
+                    $cache_group = $skope_id;
+                    $cached_candidate = wp_cache_get( $cache_key, $cache_group );
+                    if ( false === $cached_candidate ) {
+                        ob_start();
+                            $this->render( $locationSettingValue, $location_id );
+                        $cached_candidate = ob_get_clean();
+                        wp_cache_add( $cache_key, $cached_candidate, $cache_group );
+                    }
+                    echo $cached_candidate;
+                } else {
+                    $this->render( $locationSettingValue, $location_id );
+                }
+
                 Nimble_Manager()->rendering = false;
 
                 add_filter('the_content', array( $this, 'sek_schedule_sektion_rendering_before_content' ),NIMBLE_BEFORE_CONTENT_FILTER_PRIORITY );

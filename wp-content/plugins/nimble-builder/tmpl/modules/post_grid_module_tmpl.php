@@ -71,9 +71,16 @@ if ( !function_exists( 'Nimble\sek_render_post_navigation') ) {
               // https://developer.wordpress.org/reference/classes/wp_query/#pagination-parameters
               $pagination_query_var = Nimble_Manager()->is_viewing_static_front_page ? 'page' :'paged';
               $paged = get_query_var($pagination_query_var);
+              $paged = $paged ? $paged : 1;
               $model = Nimble_Manager()->model;
-              $is_current_grid_paginated = isset($_GET['nb_grid_module_go_to']) && $model['id'] === $_GET['nb_grid_module_go_to'];
-              $paged = ( $paged && $is_current_grid_paginated ) ? $paged : 1;
+              $is_nimble_pagination = isset($_GET['nb_grid_module_go_to']);
+              $is_current_grid_paginated = $is_nimble_pagination && $model['id'] === $_GET['nb_grid_module_go_to'];
+              // When user clicked on a pagination link, NB adds query params to the url ( removed via js once the page is loaded )
+              // in this case, if there are several grids printed on the page we want to paginate only the paginated one
+              // otherwise, if the pagination is accessed directly, or if the page is refreshed, all grids should be paginated according to the get_query_var($pagination_query_var) param
+              if ( $is_nimble_pagination ) {
+                $paged = $is_current_grid_paginated ? $paged : 1;
+              }
 
               // filter to add nimble module id ( ex : #__nimble__b4b942df40e5 ) at the end of the url so we focus on grid when navigating pagination
               add_filter('paginate_links', 'Nimble\sek_filter_pagination_nav_url' );
@@ -400,7 +407,11 @@ $post_query = null;
 if ( $replace_current_query && $post_nb > 0 ) {
     $cache_key = 'nb_post_q_' . $model['id'] . '_paged_' . $paged;
     $cache_group = 'nb_post_queries';
-    $cached = wp_cache_get( $cache_key, $cache_group );
+    // Use cached data when not customizing
+    $cached = false;
+    if ( !skp_is_customizing() ) {
+      $cached = wp_cache_get( $cache_key, $cache_group );
+    }
     if ( false !== $cached ) {
         $post_query = $cached;
     } else {
@@ -421,7 +432,9 @@ if ( $replace_current_query && $post_nb > 0 ) {
         } else {
           sek_error_log('post_grid_module_tmpl => query params is invalid');
         }
-        wp_cache_set( $cache_key, $post_query, $cache_group );
+        if ( !skp_is_customizing() ) {
+          wp_cache_add( $cache_key, $post_query, $cache_group );
+        }
     }
 } else if ( !$replace_current_query ) {
     if ( defined( 'DOING_AJAX' ) && DOING_AJAX && skp_is_customizing() ) {
@@ -505,12 +518,14 @@ if ( is_object( $post_query ) && $post_query->have_posts() ) {
 
   $shadow_class = true === sek_booleanize_checkbox_val( $main_settings['apply_shadow_on_hover'] ) ? 'sek-shadow-on-hover' : '';
 
-  $has_thumb_custom_height = true === sek_booleanize_checkbox_val( $thumb_settings['img_has_custom_height'] ) ? 'sek-thumb-custom-height' : '';
+  $has_thumb_custom_height = true === sek_booleanize_checkbox_val( $thumb_settings['img_has_custom_height'] ) ? 'sek-thumb-custom-height' : 'sek-thumb-no-custom-height';
 
   $tablet_breakpoint_class = true === sek_booleanize_checkbox_val( $main_settings['has_tablet_breakpoint'] ) ? 'sek-has-tablet-breakpoint' : '';
   $mobile_breakpoint_class = true === sek_booleanize_checkbox_val( $main_settings['has_mobile_breakpoint'] ) ? 'sek-has-mobile-breakpoint' : '';
 
-  $grid_wrapper_classes = implode(' ', [ $tablet_breakpoint_class, $mobile_breakpoint_class ] );
+  $grid_wrapper_classes = [ $tablet_breakpoint_class, $mobile_breakpoint_class ];
+  $grid_wrapper_classes = apply_filters('nb_grid_wrapper_classes', $grid_wrapper_classes, $value );
+  $grid_wrapper_classes = implode(' ', $grid_wrapper_classes );
 
   $grid_items_classes = [ $layout_class, $has_thumb_custom_height, $shadow_class ];
 
@@ -526,7 +541,7 @@ if ( is_object( $post_query ) && $post_query->have_posts() ) {
   }
 
   $grid_items_classes = implode(' ', $grid_items_classes );
-
+  do_action( 'nb_before_post_grid_wrapper' );
   ?>
   <div class="sek-post-grid-wrapper <?php echo $grid_wrapper_classes; ?>" id="<?php echo $model['id']; ?>">
     <div class="sek-grid-items <?php echo $grid_items_classes; ?>">

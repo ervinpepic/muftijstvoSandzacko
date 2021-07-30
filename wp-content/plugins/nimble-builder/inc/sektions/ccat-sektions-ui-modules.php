@@ -1049,7 +1049,7 @@ function sek_register_active_modules_on_front() {
 }
 
 
-// @param $skope_id added in april 2020 for for https://github.com/presscustomizr/nimble-builder/issues/657
+// @param $skope_id added in april 2020 for https://github.com/presscustomizr/nimble-builder/issues/657
 function sek_register_modules_when_not_customizing_and_not_ajaxing( $skope_id = '' ) {
     $contextually_actives_raw = sek_get_collection_of_contextually_active_modules( $skope_id );
     $contextually_actives_raw = array_keys( $contextually_actives_raw );
@@ -2604,6 +2604,33 @@ function sek_get_maybe_inherited_total_horizontal_margins( $_device, $pad_marg_o
           }
       }
       return $total_horizontal_margin_with_unit;
+}
+?><?php
+/* ------------------------------------------------------------------------- *
+ *  SPACING MODULE ( SPECIFIC FOR COLUMNS ). See https://github.com/presscustomizr/nimble-builder/issues/868
+/* ------------------------------------------------------------------------- */
+//Fired in add_action( 'after_setup_theme', 'sek_register_modules', 50 );
+function sek_get_module_params_for_sek_level_spacing_module_for_columns() {
+    return array(
+        'dynamic_registration' => true,
+        'module_type' => 'sek_level_spacing_module_for_columns',
+        //'name' => __('Spacing options', 'text_doma'),
+        // 'sanitize_callback' => 'function_prefix_to_be_replaced_sanitize_callback__czr_social_module',
+        // 'validate_callback' => 'function_prefix_to_be_replaced_validate_callback__czr_social_module',
+
+        'tmpl' => array(
+            'item-inputs' => array(
+                'pad_marg' => array(
+                    'input_type'  => 'spacingWithDeviceSwitcher',
+                    'title'       => __('Set padding and margin', 'nimble-builder'),
+                    'title_width' => 'width-100',
+                    'width-100'   => true,
+                    'default'     => array( 'desktop' => array('padding-left' => '10', 'padding-right' => '10') ),
+                    'has_device_switcher' => true
+                )
+            )
+        )
+    );
 }
 ?><?php
 //Fired in add_action( 'after_setup_theme', 'sek_register_modules', 50 );
