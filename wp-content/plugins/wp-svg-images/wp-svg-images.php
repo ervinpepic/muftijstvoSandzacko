@@ -3,7 +3,7 @@
 	Plugin Name: WP SVG images
 	Plugin URI: https://kubiq.sk
 	Description: Full SVG Media support in WordPress
-	Version: 3.4
+	Version: 3.6
 	Author: KubiQ
 	Author URI: https://kubiq.sk/about
 */
@@ -16,6 +16,20 @@ class WPSVG{
 		add_filter( 'wp_check_filetype_and_ext', array( $this, 'wp_check_filetype_and_ext' ), 100, 4 );
 		add_filter( 'wp_generate_attachment_metadata', array( $this, 'wp_generate_attachment_metadata' ), 10, 2 );
 		add_filter( 'fl_module_upload_regex', array( $this, 'fl_module_upload_regex' ), 10, 4 );
+		add_filter( 'render_block', array( $this, 'fix_missing_width_height_on_image_block' ), 10, 2 );
+	}
+
+	function fix_missing_width_height_on_image_block( $block_content, $block ){
+		if( $block['blockName'] === 'core/image' ){
+			if( strpos( $block_content, 'width=' ) === false && strpos( $block_content, 'height=' ) === false ){
+				if( isset( $block['attrs'], $block['attrs']['id'] ) && get_post_mime_type( $block['attrs']['id'] ) == 'image/svg+xml' ){
+					$svg_path = get_attached_file( $block['attrs']['id'] );
+					$dimensions = $this->svg_dimensions( $svg_path );
+					$block_content = str_replace( '<img ', '<img width="' . $dimensions->width . '" height="' . $dimensions->height . '" ', $block_content );
+				}
+			}
+		}
+		return $block_content;
 	}
 
 	function fl_module_upload_regex( $regex, $type, $ext, $file ){
@@ -43,8 +57,7 @@ class WPSVG{
 		if( substr( $filename, -4 ) == '.svg' ){
 			$filetype_ext_data['ext'] = 'svg';
 			$filetype_ext_data['type'] = 'image/svg+xml';
-		}
-		if( substr( $filename, -5 ) == '.svgz' ){
+		}elseif( substr( $filename, -5 ) == '.svgz' ){
 			$filetype_ext_data['ext'] = 'svgz';
 			$filetype_ext_data['type'] = 'image/svg+xml';
 		}
