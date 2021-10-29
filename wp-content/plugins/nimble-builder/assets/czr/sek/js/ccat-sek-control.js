@@ -3625,6 +3625,7 @@ var CZRSeksPrototype = CZRSeksPrototype || {};
             // 1) when instantiating the setting
             // 2) on each setting change, as an override of api.Value::validate( to ) @see customize-base.js
             // 3) directly when navigating the history log
+            // 4) when importing locally or globally
             // @return {} or null if did not pass the checks
             // @param scope = string, local or global
             validateSettingValue : function( valCandidate, scope ) {
@@ -3834,6 +3835,7 @@ var CZRSeksPrototype = CZRSeksPrototype || {};
 
                   if ( errorDetected ) {
                         api.infoLog('error in ::validateSettingValue', valCandidate );
+                        return null;
                   }
                   //api.infoLog('in ::validateSettingValue', valCandidate );
                   // if null is returned, the setting value is not set @see customize-base.js
@@ -7261,7 +7263,9 @@ var CZRSeksPrototype = CZRSeksPrototype || {};
                                     } else if ( ! isSettingValueChangeCase && _.isEqual( currentSetValue, self.updAPISetParams.newSetValue ) ) {
                                           self.updAPISetParams.promise.reject( 'updateAPISetting => the new setting value is unchanged when firing action : ' + params.action );
                                     } else {
-                                          if ( null !== self.validateSettingValue( self.updAPISetParams.newSetValue, params.is_global_location ? 'global' : 'local' ) ) {
+                                          // method ::validateSettingValue() returns null if there is at least one validation error
+                                          var _settingValidationResult = self.validateSettingValue( self.updAPISetParams.newSetValue, params.is_global_location ? 'global' : 'local' );
+                                          if ( null !== _settingValidationResult && !_.isUndefined(_settingValidationResult) ) {
                                                 if ( !params.is_global_location ) {
                                                       // INHERITANCE
                                                       // solves the problem of preventing group template inheritance after a local reset
@@ -7294,7 +7298,7 @@ var CZRSeksPrototype = CZRSeksPrototype || {};
                                     }
                               };//mayBeUpdateSektionsSetting()
 
-                              // For all scenarios but section injection, we can update the sektion setting now
+                              // For all scenarios except section injection, we can update the sektion setting now
                               // otherwise we need to wait for the injection to be processed asynchronously
                               // CRITICAL => self.updAPISetParams.promise has to be resolved / rejected
                               // otherwise this can lead to scenarios where a change is not taken into account in ::updateAPISettingAndExecutePreviewActions
@@ -15459,8 +15463,7 @@ var CZRSeksPrototype = CZRSeksPrototype || {};
                               api.errare( 'reset_button input => invalid scope provided.', scope );
                               return;
                         }
-
-                        api.previewer.trigger('sek-reset-collection', { scope : 'local' } );
+                        api.previewer.trigger('sek-reset-collection', { scope : scope } );
                         
                   });//on('click')
             }
@@ -21110,6 +21113,20 @@ var CZRSeksPrototype = CZRSeksPrototype || {};
                   // Note : must be always invoked always after the input / item class extension
                   // Otherwise the constructor might be extended too early and not taken into account. @see https://github.com/presscustomizr/nimble-builder/issues/37
                   api.CZRDynModule.prototype.initialize.call( module, id, options );
+
+                  //SET THE CONTENT PICKER DEFAULT OPTIONS ( FOR PRO)
+                  //@see ::setupContentPicker()
+                  module.bind( 'set_default_content_picker_options', function( params ) {
+                        params.defaultContentPickerOption.defaultOption = {
+                              'title'      : '<span style="font-weight:bold">' + sektionsLocalizedData.i18n['Set a custom url'] + '</span>',
+                              'type'       : '',
+                              'type_label' : '',
+                              'object'     : '',
+                              'id'         : '_custom_',
+                              'url'        : ''
+                        };
+                        return params;
+                  });
             },//initialize
 
 
@@ -21371,6 +21388,7 @@ var CZRSeksPrototype = CZRSeksPrototype || {};
                         //Internal item dependencies
                         item.czr_Input.each( function( input ) {
                               switch( input.id ) {
+                                    // link-to and pick url are FOR PRO
                                     case 'link-to' :
                                           _.each( [ 'link-pick-url', 'link-custom-url', 'link-target' ] , function( _inputId_ ) {
                                                 try { api.czr_sektions.scheduleVisibilityOfInputId.call( input, _inputId_, function() {

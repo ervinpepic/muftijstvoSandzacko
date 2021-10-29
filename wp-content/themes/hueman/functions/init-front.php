@@ -18,7 +18,7 @@ if ( !function_exists( 'hu_get_content') ) {
     ob_start();
     ?>
       <?php do_action( '__before_content_section', $tmpl ); ?>
-        <section class="content" id="content">
+        <main class="content" id="content">
           <?php hu_get_template_part('parts/page-title'); ?>
           <div class="hu-pad group">
             <?php
@@ -30,7 +30,7 @@ if ( !function_exists( 'hu_get_content') ) {
               }
             ?>
           </div><!--/.hu-pad-->
-        </section><!--/.content-->
+            </main><!--/.content-->
       <?php do_action( '__after_content_section', $tmpl ); ?>
     <?php
     $html = ob_get_clean();
@@ -287,16 +287,18 @@ if ( !function_exists( 'hu_print_social_links' ) ) {
     //FA5 backward compatibility with FA4
     //see https://github.com/presscustomizr/customizr/issues/1364
     $_fa_solid_icons = array(
-        'fa-envelope',
-        'fa-envelope-square',
-        'fa-mobile',
-        'fa-mobile-alt',
-        'fa-phone',
-        'fa-phone-square',
-        'fa-rss',
-        'fa-rss-square',
-        'fa-share-alt',
-        'fa-share-alt-square'
+      'fa-envelope',
+      'fa-envelope-square',
+      'fa-map-marker',
+      'fa-mobile',
+      'fa-mobile-alt',
+      'fa-phone',
+      'fa-phone-square',
+      'fa-rss',
+      'fa-rss-square',
+      'fa-share-alt',
+      'fa-share-alt-square',
+      'fa-sms'
     );
     $_fa_icon_replacements = array(
         'fa-bitbucket-square'     => 'fa-bitbucket',
@@ -1401,7 +1403,7 @@ function hu_maybe_preload_selfhosted_font() {
 <link rel="preload" as="font" type="font/woff" href="<?php echo HU_BASE_URL .'assets/front/fonts/titillium-regular-webfont.woff'; ?>" crossorigin="anonymous"/>
 <link rel="preload" as="font" type="font/woff" href="<?php echo HU_BASE_URL .'assets/front/fonts/titillium-regularitalic-webfont.woff'; ?>" crossorigin="anonymous"/>
 <link rel="preload" as="font" type="font/woff" href="<?php echo HU_BASE_URL .'assets/front/fonts/titillium-semibold-webfont.woff'; ?>" crossorigin="anonymous"/>
-<style type="text/css">
+<style>
   /*  base : fonts
 /* ------------------------------------ */
 body { font-family: "Titillium", Arial, sans-serif; }
