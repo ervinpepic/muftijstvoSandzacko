@@ -42,7 +42,7 @@ add_filter('admin_title', 'custom_admin_title', 10, 2);
 // Admin footer modification
 
 function custom_footer_copyright() {
-	echo '<span id="footer-thankyou">Developed by Ervin pepic </span>';
+	echo '<span id="footer-thankyou"><a href="https://ervinpepic.com">Developed by Ervin Pepic</a></span>';
 }
 
 add_filter('admin_footer_text', 'custom_footer_copyright');

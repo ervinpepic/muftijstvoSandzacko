@@ -3,8 +3,8 @@ Contributors: kubiq
 Donate link: https://www.paypal.me/jakubnovaksl
 Tags: svg support, svg upload, svg thumbnail
 Requires at least: 3.0.1
-Tested up to: 5.8
-Stable tag: 3.6
+Tested up to: 5.9
+Stable tag: 3.7
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -28,6 +28,9 @@ If you know what you are doing and you want to enable SVG upload for everyone wi
 2. Activate the plugin through the 'Plugins' menu in WordPress
 
 == Changelog ==
+
+= 3.7 =
+* tested on WordPress 5.9
 
 = 3.6 =
 * fix typo in last update
