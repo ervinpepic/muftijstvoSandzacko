@@ -1,33 +1,79 @@
-=== WP SVG images ===
-Contributors: kubiq
-Donate link: https://www.paypal.me/jakubnovaksl
-Tags: svg support, svg upload, svg thumbnail
+=== WP SVG Images ===
+Contributors: shortpixel, kubiq
+Donate link: https://www.paypal.me/resizeImage
+Tags: svg, svg support, svg upload, sanitization
 Requires at least: 3.0.1
+Requires PHP: 5.6.40
 Tested up to: 5.9
-Stable tag: 3.7
+Stable tag: 4.0
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
-Add SVG support to your WordPress web. You can upload SVG files, you can see them as thumbnails in media library, etc.
+Add SVG support to your WP website. Securely upload SVG files, automatic sanitization, Media Library preview.
 
 == Description ==
 
-Add SVG support to your WordPress web. You can upload SVG files, you can see them as thumbnails in media library, etc.
+**Securely upload SVG files to your Media Library. Uploaded SVG files are automatically sanitized.**
 
-## Security
+SVG stands for [Scalable Vector Graphics](https://en.wikipedia.org/wiki/Scalable_Vector_Graphics) and is probably the most efficient way to display images. 
+WP SVG Images Plugin is an **easy-to-use and lightweight plugin** that allows you to upload SVG files to your media library safely and easily.
 
-SVG files have XML syntax which would allow someone to inject malicious code. That's why only Administrators and Editors can upload SVG files.
+= Features =
+* Support for SVG uploads to your Media Library.
+* Sanitize uploaded SVG files. Malicious SVG/XML files are rejected from upload.
+* Admin configurable SVG support for different user roles. Ability to disable SVG upload for different user roles.
+* Different user roles can upload and/or sanitize the uploaded SVG images.
+* SVG preview in Media Library.
 
-If you know what you are doing and you want to enable SVG upload for everyone with Media Library access or upload_files capability, then you can use WP_SVG_FOR_EVERYONE constant in your wp-config.php
+= Support =
+24/7 SVG support offered by <a href="https://shortpixel.com">ShortPixel</a> [here](https://shortpixel.com/contact) or [here](https://wordpress.org/support/plugin/wp-svg-images/).
 
-`define( 'WP_SVG_FOR_EVERYONE', true );`
+
+= Recommended plugins =
+This plugin is supported & maintained by [ShortPixel](https://shortpixel.com/).
+Other popular plugins by ShortPixel: 
+[ShortPixel Image Optimizer](https://wordpress.org/plugins/shortpixel-image-optimiser/) - Image optimization & compression for all the images on your website, including WebP delivery – ShortPixel Image Optimizer.
+[ShortPixel Adaptive Images](https://wordpress.org/plugins/shortpixel-adaptive-images/) - On-the-fly image optimization & CDN delivery.
+[Enable Media Replace](https://wordpress.org/plugins/enable-media-replace/) - Easily replace images or files in Media Library.
+[reGenerate Thumbnails Advanced](https://wordpress.org/plugins/regenerate-thumbnails-advanced/) - Easily regenerate thumbnails.
+[Resize Image After Upload](https://wordpress.org/plugins/resize-image-after-upload/) - Automatically resize each uploaded image.
+
+
+## Hooks for developers
+
+#### WPSVG_setAllowedTags
+Allows you to specify more tags that will be not removed during sanitization
+
+`add_filter( 'WPSVG_setAllowedTags', 'my_custom_allowed_svg_tags', 10, 1 );
+function my_custom_allowed_svg_tags( $tags ){
+	$tags[] = 'path';
+	return $tags;
+}`
+
+#### WPSVG_setAllowedAttrs
+Allows you to specify more attributes that will be not removed during sanitization
+
+`add_filter( 'WPSVG_setAllowedAttrs', 'my_custom_allowed_svg_attributes', 10, 1 );
+function my_custom_allowed_svg_attributes( $attributes ){
+	$attributes[] = 'fill';
+	return $attributes;
+}`
+
 
 == Installation ==
 
 1. Upload `wp-svg-images` directory to the `/wp-content/plugins/` directory
 2. Activate the plugin through the 'Plugins' menu in WordPress
 
+
 == Changelog ==
+
+= 4.0 =
+Release date: March 29th, 2022
+* New: joined the ShortPixel family;
+* New: added SVG sanitization;
+* New: added settings page where you can enable/disable SVG upload per user role;
+* Compat: deprecated `WP_SVG_FOR_EVERYONE`.
 
 = 3.7 =
 * tested on WordPress 5.9

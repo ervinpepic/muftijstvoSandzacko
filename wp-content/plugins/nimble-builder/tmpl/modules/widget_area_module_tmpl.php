@@ -14,11 +14,11 @@ if ( !function_exists( 'Nimble\sek_maybe_print_widget_placeholder') ) {
   function sek_maybe_print_widget_placeholder( $id ) {
       global $wp_registered_sidebars;
       if ( !sek_is_nimble_widget_id( $id ) || !array_key_exists( $id, $wp_registered_sidebars ) ) {
-          $placeholder_text = __('Select a Nimble widget area and start adding widgets.', 'nimble-builder');
+          $placeholder_text = __('Select a Nimble widget area and start adding widgets.', 'text_domain_to_replace');
       } else {
           $widget_area_model = $wp_registered_sidebars[ $id ];
           $placeholder_text = sprintf( '%1$s <span class="zone-name" style="font-weight:bold">%2$s</span>',
-              __('Add widgets to', 'nimble-builder'),
+              __('Add widgets to', 'text_domain_to_replace'),
               isset( $widget_area_model['name'] ) ? $widget_area_model['name'] : $widget_area_model['id']
           );
       }
@@ -26,7 +26,7 @@ if ( !function_exists( 'Nimble\sek_maybe_print_widget_placeholder') ) {
       printf('<div class="widget" data-czr-panel-focus="widgets"><div class="czr-placeholder-widget" %1$s><h3 %2$s>%3$s</h3></div></div>',
           'style="background:#f7f8f9;padding:30px;text-align:center;outline:3px dotted #858585;;font-size:.875em;"',
           'style="margin:0.5em;font-size:17px;line-height:1.5em;color:#444"',
-          $placeholder_text
+          wp_kses_post($placeholder_text)
       );
   }
 }

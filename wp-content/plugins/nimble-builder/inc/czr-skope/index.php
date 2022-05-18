@@ -330,11 +330,11 @@ function skp_get_skope_id( $level = 'local' ) {
     // => which will lead to skope_id set to '_skope_not_set_'
     // in order to prevent this, let's get the skope_id value from the customizer posted value when available.
     if ( skp_is_customizing() && '_skope_not_set_' === $skope_id_to_return && 'local' === $level && !empty($_POST['local_skope_id']) ) {
-        $skope_id_to_return = $_POST['local_skope_id'];
+        $skope_id_to_return = sanitize_text_field($_POST['local_skope_id']);
     }
     // Feb 2021 => added for https://github.com/presscustomizr/nimble-builder/issues/478
     if ( skp_is_customizing() && '_skope_not_set_' === $skope_id_to_return && 'group' === $level && !empty($_POST['group_skope_id']) ) {
-        $skope_id_to_return = $_POST['group_skope_id'];
+        $skope_id_to_return = sanitize_text_field($_POST['group_skope_id']);
     }
 
     $skope_id_to_return = apply_filters( 'skp_get_skope_id', $skope_id_to_return, $level );
@@ -410,14 +410,14 @@ function skp_get_skope_title( $args = array() ) {
     $long         = $args['long'];
     $is_prefixed  = $args['is_prefixed'];
 
-    $_dyn_type = ( skp_is_customize_preview_frame() && isset( $_POST['dyn_type']) ) ? $_POST['dyn_type'] : '';
+    $_dyn_type = ( skp_is_customize_preview_frame() && isset( $_POST['dyn_type']) ) ? sanitize_text_field($_POST['dyn_type']) : '';
     $type = skp_get_skope('type');
     $skope = skp_get_skope();
     $title = '';
 
     if( 'local' == $level ) {
         $type = skp_get_skope( 'type' );
-        $title = $is_prefixed ? __( 'Options for', 'nimble-builder') . ' ' : $title;
+        $title = $is_prefixed ? __( 'Options for', 'text_doma') . ' ' : $title;
         if ( skp_skope_has_a_group( $meta_type ) ) {
             $_id = skp_get_skope('id');
             switch ($meta_type) {
@@ -434,22 +434,22 @@ function skp_get_skope_title( $args = array() ) {
 
                 case 'user':
                   $author = get_userdata( $_id );
-                  $title .= sprintf( '%1$s "%3$s" (id : %2$s)', __('user', 'nimble-builder'), $_id, $author->user_login );
+                  $title .= sprintf( '%1$s "%3$s" (id : %2$s)', __('user', 'text_doma'), $_id, $author->user_login );
                   break;
             }
         } else if ( ( 'trans' == $_dyn_type || skp_skope_has_no_group( $skope ) ) ) {
             if ( is_post_type_archive() ) {
                 global $wp_the_query;
-                $title .= sprintf( __( '%1$s archive page', 'nimble-builder'), $wp_the_query->get( 'post_type' ) );
+                $title .= sprintf( __( '%1$s archive page', 'text_doma'), $wp_the_query->get( 'post_type' ) );
             } else {
                 $title .= strtolower( $skope );
             }
         } else {
-            $title .= __( 'Undefined', 'nimble-builder');
+            $title .= __( 'Undefined', 'text_doma');
         }
     }
     if ( 'group' == $level || 'special_group' == $level ) {
-        $title = $is_prefixed ? __( 'Options for all', 'nimble-builder') . ' ' : __( 'All' , 'nimble-builder' ) . ' ';
+        $title = $is_prefixed ? __( 'Options for all', 'text_doma') . ' ' : __( 'All' , 'text_doma' ) . ' ';
         switch( $meta_type ) {
             case 'post' :
                 $type_obj = get_post_type_object( $type );
@@ -462,12 +462,12 @@ function skp_get_skope_title( $args = array() ) {
             break;
 
             case 'user' :
-                $title .= __('users', 'nimble-builder');
+                $title .= __('users', 'text_doma');
             break;
         }
     }
     if ( 'global' == $level ) {
-        $title = __( 'Sitewide options', 'nimble-builder');
+        $title = __( 'Sitewide options', 'text_doma');
     }
     $title = ucfirst( $title );
     return skp_trim_text( $title, $long ? 45 : 28, '...');
@@ -519,7 +519,7 @@ function skp_is_customizing() {
     $is_customize_admin_page_one = (
       $is_customize_php_page
       ||
-      ( isset( $_REQUEST['wp_customize'] ) && 'on' == $_REQUEST['wp_customize'] )
+      ( isset( $_REQUEST['wp_customize'] ) && 'on' == sanitize_text_field($_REQUEST['wp_customize']) )
       ||
       ( !empty( $_GET['customize_changeset_uuid'] ) || !empty( $_POST['customize_changeset_uuid'] ) )
     );
@@ -634,7 +634,7 @@ if ( !class_exists( 'Flat_Export_Skope_Data_And_Send_To_Panel' ) ) :
     class Flat_Export_Skope_Data_And_Send_To_Panel extends Flat_Skop_Register_And_Load_Control_Assets {
           // Fired in Flat_Skop_Base::__construct()
           public function skp_export_skope_data_and_schedule_sending_to_panel() {
-              add_action( 'wp_footer', array( $this, 'skp_print_server_skope_data') , 30 );
+              add_action( 'wp_head', array( $this, 'skp_print_server_skope_data') , 30 );
           }
 
 
@@ -649,16 +649,11 @@ if ( !class_exists( 'Flat_Export_Skope_Data_And_Send_To_Panel' ) ) :
               // $_czr_scopes = array( );
               $_czr_skopes            = $this->_skp_get_json_export_ready_skopes();
               $_czr_query_data        = $this->_skp_get_json_export_ready_query_data();
-
+            
+              ob_start();
               ?>
-                  <script type="text/javascript" id="czr-print-skop">
-                      (function ( _export ){
-                              _export.czr_new_skopes        = <?php echo wp_json_encode( $_czr_skopes ); ?>;
-                              _export.czr_stylesheet    = '<?php echo get_stylesheet(); ?>';
-                              _export.czr_query_params  = <?php echo wp_json_encode($_czr_query_data); ?>;
-                      })( _wpCustomizeSettings );
-
-                      // December 2020 : it may happen that the 'sync' event was already sent and that we missed it
+                    var _doSend = function() {
+                        // December 2020 : it may happen that the 'sync' event was already sent and that we missed it
                       // Typically when the site is slow.
                       // So we need to check if the "sync" event has fired already ( see customize-base.js, ::bind method )
                       // For more security, let's introduce a marker and attempt to re-sent after a moment if needed
@@ -673,22 +668,49 @@ if ( !class_exists( 'Flat_Export_Skope_Data_And_Send_To_Panel' ) ) :
                             window.czr_skopes_sent = true;
                       };
 
-                      jQuery( function() {
-                          if ( wp.customize.preview.topics && wp.customize.preview.topics.sync && wp.customize.preview.topics.sync.fired() ) {
-                              _send();
-                          } else {
-                              wp.customize.preview.bind( 'sync', function( events ) {
-                                  _send();
-                              });
-                          }
-                          setTimeout( function() {
-                                if ( !window.czr_skopes_sent ) {
+                        jQuery( function() {
+                            if ( wp.customize.preview.topics && wp.customize.preview.topics.sync && wp.customize.preview.topics.sync.fired() ) {
+                                _send();
+                            } else {
+                                wp.customize.preview.bind( 'sync', function( events ) {
                                     _send();
-                                }
-                          }, 2500 );
-                      });
-                  </script>
+                                });
+                            }
+                            setTimeout( function() {
+                                    if ( !window.czr_skopes_sent ) {
+                                        _send();
+                                    }
+                            }, 2500 );
+                        });
+                    };
+                    
+                    
+                    // recursively try to load jquery every 200ms during 6s ( max 30 times )
+                    var _doWhenCustomizeSettingsReady = function( attempts ) {
+                        attempts = attempts || 0;
+                        if ( typeof undefined !== typeof window._wpCustomizeSettings ) {
+                            _wpCustomizeSettings.czr_new_skopes        = <?php echo wp_json_encode( $_czr_skopes ); ?>;
+                            _wpCustomizeSettings.czr_stylesheet    = '<?php echo get_stylesheet(); ?>';
+                            _wpCustomizeSettings.czr_query_params  = <?php echo wp_json_encode($_czr_query_data); ?>;
+                            _doSend();
+                        } else if ( attempts < 30 ) {
+                            setTimeout( function() {
+                                attempts++;
+                                _doWhenCustomizeSettingsReady( attempts );
+                            }, 20 );
+                        } else {
+                            if ( window.console && window.console.log ) {
+                                console.log('Nimble Builder problem : _wpCustomizeSettings is not defined');
+                            }
+                        }
+                    };
+
+                    _doWhenCustomizeSettingsReady();
               <?php
+              $script = ob_get_clean();
+              wp_register_script( 'nb_print_skope_data_js', '');
+              wp_enqueue_script( 'nb_print_skope_data_js' );
+              wp_add_inline_script( 'nb_print_skope_data_js', $script );
           }
 
 

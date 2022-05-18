@@ -16,8 +16,8 @@ function nb_register_options_page() {
   if ( !sek_current_user_can_access_nb_ui() )
     return;
   add_options_page(
-    apply_filters( 'nb_admin_settings_title', __('Nimble Builder', 'nimble-builder') ),
-    apply_filters( 'nb_admin_settings_title', __('Nimble Builder', 'nimble-builder') ),
+    apply_filters( 'nb_admin_settings_title', __('Nimble Builder', 'text-domain') ),
+    apply_filters( 'nb_admin_settings_title', __('Nimble Builder', 'text-domain') ),
     'manage_options',
     NIMBLE_OPTIONS_PAGE,
     '\Nimble\nb_options_page'
@@ -38,20 +38,24 @@ function nb_options_page() {
   <div id="nimble-options" class="wrap">
       <h1 class="nb-option-page-title">
         <?php
-        printf('<span class="sek-nimble-title-icon"><img src="%1$s" alt="Build with Nimble Builder">%2$s</span>',
-            NIMBLE_BASE_URL.'/assets/img/nimble/nimble_icon.svg?ver='.NIMBLE_VERSION,
-            apply_filters( 'nimble_option_title_icon_after', '' )
+        printf('<span class="sek-nimble-title-icon"><img src="%1$s" alt="Build with Nimble Builder"></span>',
+            esc_url( NIMBLE_BASE_URL.'/assets/img/nimble/nimble_icon.svg?ver='.NIMBLE_VERSION )
         );
-        echo apply_filters( 'nimble_parse_admin_text', $page_title );
+        echo apply_filters( 'nimble_parse_admin_text', esc_html( $page_title ) ) . wp_kses_post( apply_filters( 'nimble_option_title_icon_after', '' ) );
         ?>
       </h1>
       <div class="nav-tab-wrapper">
           <?php
+            $allowed_tags = array(
+              'div' => array('class'=>true),
+              'span' => array('class'=>true),
+              'img' => array('class'=>true, 'src'=>true, 'alt'=>true),
+            ); 
             foreach ($option_tabs as $tab_id => $tab_data ) {
               printf('<a class="nav-tab %1$s" href="%2$s">%3$s</a>',
                   $tab_id === nb_get_active_option_tab() ? 'nav-tab-active' : '',
-                  admin_url( NIMBLE_OPTIONS_PAGE_URL ) . '&tab=' . $tab_id,
-                  $tab_data['title']
+                  esc_url( admin_url( NIMBLE_OPTIONS_PAGE_URL ) . '&tab=' . $tab_id ),
+                  wp_kses($tab_data['title'], $allowed_tags)
               );
             }
           ?>
@@ -63,7 +67,7 @@ function nb_options_page() {
             if ( function_exists( $_cb ) ) {
               call_user_func( $_cb );
             } else {
-              echo $_cb;
+              echo esc_attr($_cb);
             }
           } else if ( is_array($_cb) && 2 == count($_cb) ) {
             if ( is_object($_cb[0]) ) {
@@ -97,11 +101,11 @@ function nb_options_page() {
 *  ADD SETTINGS LINKS
 /* ------------------------------------------------------------------------- */
 function nb_settings_link($links) {
-    $doc_link = sprintf('<a href="%1$s" target="_blank" rel="noopener noreferrer">%2$s</a>', 'https://docs.presscustomizr.com/article/337-getting-started-with-the-nimble-builder-plugin', __('Docs', 'nimble-builder') );
+    $doc_link = sprintf('<a href="%1$s" target="_blank" rel="noopener noreferrer">%2$s</a>', 'https://docs.presscustomizr.com/article/337-getting-started-with-the-nimble-builder-plugin', __('Docs', 'text-doma') );
     array_unshift($links, $doc_link );
     $settings_link = sprintf('<a href="%1$s">%2$s</a>',
         add_query_arg( array( 'tab' => 'options' ), admin_url( NIMBLE_OPTIONS_PAGE_URL ) ),
-        __('Settings', 'nimble-builder')
+        __('Settings', 'text-doma')
     );
     array_unshift($links, $settings_link );
     return $links;
@@ -164,7 +168,7 @@ function nb_register_option_tab( $tab ) {
 
 function nb_get_active_option_tab() {
     // check that we have a tab param and that this tab is registered
-    $tab_id = isset( $_GET['tab'] ) ? $_GET['tab'] : 'welcome';
+    $tab_id = isset( $_GET['tab'] ) ? sanitize_text_field($_GET['tab']) : 'welcome';
     if ( !array_key_exists( $tab_id, Nimble_Manager()->admin_option_tabs ) ) {
         sek_error_log( __FUNCTION__ . ' error => invalid tab');
         $tab_id = 'welcome';
@@ -177,19 +181,19 @@ function nb_get_active_option_tab() {
 /* ------------------------------------------------------------------------- */
 nb_register_option_tab([
     'id' => 'welcome',
-    'title' => __('Welcome', 'nimble-builder'),
-    'page_title' => __('Nimble Builder', 'nimble-builder' ),
+    'title' => __('Welcome', 'text-doma'),
+    'page_title' => __('Nimble Builder', 'nimble' ),
     'content' => '\Nimble\print_welcome_page',
 ]);
 function print_welcome_page() {
     ?>
     <div class="nimble-welcome-content">
-      <?php echo sek_get_welcome_block(); ?>
+      <?php echo wp_kses_post(sek_get_welcome_block()); ?>
     </div>
     <div class="clear"></div>
     <hr/>
     <div>
-      <h2><?php _e('Watch the video below for a brief overview of Nimble Builder features', 'nimble-builder'); ?></h2>
+      <h2><?php _e('Watch the video below for a brief overview of Nimble Builder features', 'text-doma'); ?></h2>
       <iframe src="https://player.vimeo.com/video/328473405?loop=1&title=0&byline=0&portrait=0" width="640" height="424" frameborder="0" allow="autoplay; fullscreen" allowfullscreen></iframe>
     </div>
 
@@ -329,8 +333,8 @@ function print_welcome_page() {
 /* ------------------------------------------------------------------------- */
 nb_register_option_tab([
     'id' => 'options',
-    'title' => __('Options', 'nimble-builder'),
-    'page_title' => __('Nimble Builder Options', 'nimble-builder' ),
+    'title' => __('Options', 'text-doma'),
+    'page_title' => __('Nimble Builder Options', 'nimble' ),
     'content' => '\Nimble\print_options_page',
 ]);
 function print_options_page() {
@@ -339,40 +343,40 @@ function print_options_page() {
     <table class="form-table" role="presentation">
       <tbody>
         <tr>
-          <th scope="row"><?php _e('Shortcodes', 'nimble-builder'); ?></th>
+          <th scope="row"><?php _e('Shortcodes', 'text_doma'); ?></th>
           <td>
-            <fieldset><legend class="screen-reader-text"><span><?php _e('Shortcodes', 'nimble-builder'); ?></span></legend>
+            <fieldset><legend class="screen-reader-text"><span><?php _e('Shortcodes', 'text_doma'); ?></span></legend>
               <?php
                 $shortcode_opt_val = get_option( NIMBLE_OPT_NAME_FOR_SHORTCODE_PARSING );
               ?>
               <label for="nb_shortcodes_parsed_in_czr"><input name="nb_shortcodes_parsed_in_czr" type="checkbox" id="nb_shortcodes_parsed_in_czr" value="on" <?php checked( $shortcode_opt_val, 'on' ); ?>>
-              <?php _e('Parse shortcodes when building your pages in the customizer', 'nimble-builder'); ?></label>
-              <p class="description"><?php _e('Shortcodes are disabled by default when customizing to prevent any conflicts with Nimble Builder interface.', 'nimble-builder'); ?></p>
+              <?php _e('Parse shortcodes when building your pages in the customizer', 'text_doma'); ?></label>
+              <p class="description"><?php _e('Shortcodes are disabled by default when customizing to prevent any conflicts with Nimble Builder interface.', 'text_doma'); ?></p>
             </fieldset>
           </td>
         </tr>
         <tr>
-          <th scope="row"><?php _e('Widgets Module', 'nimble-builder'); ?></th>
+          <th scope="row"><?php _e('Widgets Module', 'text_doma'); ?></th>
           <td>
-            <fieldset><legend class="screen-reader-text"><span><?php _e('Widgets module', 'nimble-builder'); ?></span></legend>
+            <fieldset><legend class="screen-reader-text"><span><?php _e('Widgets module', 'text_doma'); ?></span></legend>
               <?php
                 $widget_disabled_opt_val = get_option( NIMBLE_OPT_NAME_FOR_DISABLING_WIDGET_MODULE );
               ?>
               <label for="nb_widgets_disabled_in_czr"><input name="nb_widgets_disabled_in_czr" type="checkbox" id="nb_widgets_disabled_in_czr" value="on" <?php checked( $widget_disabled_opt_val, 'on' ); ?>>
-              <?php _e('Disable the Widgets Module', 'nimble-builder'); ?></label>
+              <?php _e('Disable the Widgets Module', 'text_doma'); ?></label>
             </fieldset>
           </td>
         </tr>
         <tr>
-          <th scope="row"><?php _e('Debug Mode', 'nimble-builder'); ?></th>
+          <th scope="row"><?php _e('Debug Mode', 'text_doma'); ?></th>
           <td>
-            <fieldset><legend class="screen-reader-text"><span><?php _e('Debug Mode', 'nimble-builder'); ?></span></legend>
+            <fieldset><legend class="screen-reader-text"><span><?php _e('Debug Mode', 'text_doma'); ?></span></legend>
               <?php
                 $nb_debug_mode_opt_val = get_option( NIMBLE_OPT_NAME_FOR_DEBUG_MODE );
               ?>
               <label for="nb_debug_mode_active"><input name="nb_debug_mode_active" type="checkbox" id="nb_debug_mode_active" value="on" <?php checked( $nb_debug_mode_opt_val, 'on' ); ?>>
-              <?php _e('Activate the debug mode when customizing', 'nimble-builder'); ?></label>
-              <p class="description"><?php _e('In debug mode, during customization Nimble Builder deactivates all modules content and prints only the structure of your sections. This lets you troubleshoot, remove or edit your modules safely.', 'nimble-builder'); ?></p>
+              <?php _e('Activate the debug mode when customizing', 'text_doma'); ?></label>
+              <p class="description"><?php _e('In debug mode, during customization Nimble Builder deactivates all modules content and prints only the structure of your sections. This lets you troubleshoot, remove or edit your modules safely.', 'text_doma'); ?></p>
             </fieldset>
           </td>
         </tr>
@@ -388,13 +392,13 @@ function print_options_page() {
     <table class="form-table" role="presentation">
       <tbody>
         <tr>
-          <th scope="row"><?php _e('Remove all Nimble Builder data', 'nimble-builder'); ?></th>
+          <th scope="row"><?php _e('Remove all Nimble Builder data', 'text_doma'); ?></th>
           <td>
-            <fieldset><legend class="screen-reader-text"><span><?php _e('Remove all Nimble Builder data', 'nimble-builder'); ?></span></legend>
+            <fieldset><legend class="screen-reader-text"><span><?php _e('Remove all Nimble Builder data', 'text_doma'); ?></span></legend>
               <?php
                 $refresh_url = add_query_arg( array( 'tab' => 'options', 'clean_nb' => 'true' ), admin_url( NIMBLE_OPTIONS_PAGE_URL ));
+              ob_start();
               ?>
-              <script>
                 var nb_toggle_clean_button = function() {
                   jQuery( function($) {
                     $('.nb-clean-traces-confirm').stop().slideToggle('fast');
@@ -404,7 +408,7 @@ function print_options_page() {
                 var nb_refresh_opt_page = function() {
                   jQuery( function($) {
                     _nonce_value = $('#nb-base-options-nonce').val();
-                    _url = '<?php echo $refresh_url; ?>';
+                    _url = '<?php echo esc_url($refresh_url); ?>';
                     // add nonce as param so NB can verify it when the page reloads
                     if ( _nonce_value ) {
                       _url = _url + '&ecnon=' + _nonce_value;// looks like site.com/wp-admin/options-general.php?page=nb-options&tab=options&clean_nb=true&ecnon=7cc5758b65
@@ -412,25 +416,30 @@ function print_options_page() {
                     window.location.href = _url;
                   });
                 };
-              </script>
-
-              <?php if ( isset( $_GET['clean_nb'] ) && $_GET['clean_nb'] ) : ?>
+              <?php
+              $script = ob_get_clean();
+              wp_register_script( 'nb_options_js', '');
+              wp_enqueue_script( 'nb_options_js' );
+              wp_add_inline_script( 'nb_options_js', $script );
+              ?>
+              <?php $clean_nb = isset( $_GET['clean_nb'] ) ? sanitize_text_field($_GET['clean_nb']) : false; ?>
+              <?php if ( $clean_nb ) : ?>
                   <?php $status = sek_clean_all_nimble_data(); ?>
                     <?php if ( 'success' === $status ) : ?>
                       <div id="message" class="updated notice">
-                        <p class="nb-clean-traces-success"><strong><?php _e('All Nimble Builder data have been successfully removed from your WordPress website.', 'nimble-builder'); ?></strong></p>
+                        <p class="nb-clean-traces-success"><strong><?php _e('All Nimble Builder data have been successfully removed from your WordPress website.', 'text_doma'); ?></strong></p>
                       </div>
                     <?php else : ?>
                       <div id="message" class="error notice">
-                        <p><strong><?php _e('Security problem when trying to remove Nimble Builder data.', 'nimble-builder'); ?></strong></p>
+                        <p><strong><?php _e('Security problem when trying to remove Nimble Builder data.', 'text_doma'); ?></strong></p>
                       </div>
                     <?php endif; ?>
               <?php else : ?>
-                  <p class="description"><?php _e('This will permanently remove all data created by Nimble Builder and stored in your database or as stylesheets : page customizations, custom sections, custom templates, options, CSS stylesheets.', 'nimble-builder'); ?></p><br/>
-                  <button class="button" onclick="window.nb_toggle_clean_button()"><?php _e('Remove now', 'nimble-builder'); ?></button>
+                  <p class="description"><?php _e('This will permanently remove all data created by Nimble Builder and stored in your database or as stylesheets : page customizations, custom sections, custom templates, options, CSS stylesheets.', 'text_doma'); ?></p><br/>
+                  <button class="button" onclick="window.nb_toggle_clean_button()"><?php _e('Remove now', 'text_doma'); ?></button>
                   <div class="nb-clean-traces-confirm" style="display:none">
-                    <p class="description"><?php _e('Once you delete Nimble Builder data, there is no going back. Please be certain. ', 'nimble-builder'); ?></p><br/>
-                    <button class="button nb-permanent-removal-btn" onclick="window.nb_refresh_opt_page()"><?php _e('Yes I want to clean all data', 'nimble-builder'); ?></button>
+                    <p class="description"><?php _e('Once you delete Nimble Builder data, there is no going back. Please be certain. ', 'text_doma'); ?></p><br/>
+                    <button class="button nb-permanent-removal-btn" onclick="window.nb_refresh_opt_page()"><?php _e('Yes I want to clean all data', 'text_doma'); ?></button>
                   </div>
               <?php endif; ?>
             </fieldset>
@@ -459,7 +468,7 @@ function nb_save_base_options() {
 // the option is updated only if different than the default val or if the option exists already
 function nb_maybe_update_checkbox_option( $opt_name, $unchecked_value ) {
     $opt_value = get_option( $opt_name );
-    $posted_value = array_key_exists( $opt_name, $_POST ) ? $_POST[$opt_name] : $unchecked_value;
+    $posted_value = array_key_exists( $opt_name, $_POST ) ? sanitize_text_field($_POST[$opt_name]) : $unchecked_value;
     if ( $unchecked_value !== $posted_value ) {
         update_option( $opt_name, esc_attr( $posted_value ), 'no' );
     } else {
@@ -480,26 +489,26 @@ do_action('nb_base_admin_options_registered');
 /* ------------------------------------------------------------------------- */
 //register option tab and print the form
 if ( sek_is_pro() || sek_is_upsell_enabled() ) {
-    $restrict_users_title = __('Manage authorized users', 'nimble-builder');
+    $restrict_users_title = __('Manage authorized users', 'text-doma');
     if ( !sek_is_pro() ) {
         $restrict_users_title = sprintf( '<span class="sek-pro-icon"><img src="%1$s" alt="Pro feature"></span><span class="sek-title-after-icon">%2$s</span>',
             NIMBLE_BASE_URL.'/assets/czr/sek/img/pro_orange.svg?ver='.NIMBLE_VERSION,
-            __('Manage authorized users', 'nimble-builder' )
+            __('Manage authorized users', 'nimble' )
         );
     }
     nb_register_option_tab([
         'id' => 'restrict_users',
         'title' => $restrict_users_title,
-        'page_title' => __('Manage authorized users', 'nimble-builder' ),
+        'page_title' => __('Manage authorized users', 'nimble' ),
         'content' => '\Nimble\print_restrict_users_options_content',
     ]);
 
     function print_restrict_users_options_content() {
         if ( !sek_is_pro() ) {
           ?>
-            <h4><?php _e('Nimble Builder can be used by default by all users with an administrator role. With Nimble Builder Pro you can decide which administrators are allowed to use the plugin.', 'nimble-builder'); ?></h4>
-            <h4><?php _e('Unauthorized users will not see any reference to Nimble Builder when editing a page, in the customizer and in the WordPress admin screens.', 'nimble-builder') ?></h4>
-            <a class="sek-pro-link" href="https://presscustomizr.com/nimble-builder-pro/" rel="noopener noreferrer" title="Go Pro" target="_blank"><?php _e('Go Pro', 'nimble-builder'); ?> <span class="dashicons dashicons-external"></span></a>
+            <h4><?php _e('Nimble Builder can be used by default by all users with an administrator role. With Nimble Builder Pro you can decide which administrators are allowed to use the plugin.', 'text_domain'); ?></h4>
+            <h4><?php _e('Unauthorized users will not see any reference to Nimble Builder when editing a page, in the customizer and in the WordPress admin screens.', 'text_domain') ?></h4>
+            <a class="sek-pro-link" href="https://presscustomizr.com/nimble-builder-pro/" rel="noopener noreferrer" title="Go Pro" target="_blank"><?php _e('Go Pro', 'text_domain'); ?> <span class="dashicons dashicons-external"></span></a>
           <?php
         }
         do_action( 'nb_restrict_user_content' );
@@ -512,16 +521,16 @@ if ( sek_is_pro() || sek_is_upsell_enabled() ) {
 /* ------------------------------------------------------------------------- */
 nb_register_option_tab([
     'id' => 'system-info',
-    'title' => __('System info', 'nimble-builder'),
-    'page_title' => __('System info', 'nimble-builder' ),
+    'title' => __('System info', 'text-doma'),
+    'page_title' => __('System info', 'nimble' ),
     'content' => '\Nimble\print_system_info',
 ]);
 function print_system_info() {
     require_once( NIMBLE_BASE_PATH . '/inc/admin/system-info.php' );
     ?>
-     <h3><?php _e( 'System Informations', 'nimble-builder' ); ?></h3>
-      <h4><?php _e( 'Please include your system informations when posting support requests.' , 'nimble-builder' ) ?></h4>
-      <textarea readonly="readonly" onclick="this.focus();this.select()" id="system-info-textarea" name="tc-sysinfo" title="<?php _e( 'To copy the system info, click below then press Ctrl + C (PC) or Cmd + C (Mac).', 'nimble-builder' ); ?>" style="width: 800px;min-height: 800px;font-family: Menlo,Monaco,monospace;background: 0 0;white-space: pre;overflow: auto;display:block;"><?php echo sek_config_infos(); ?></textarea>
+     <h3><?php _e( 'System Informations', 'text_domain_to_be_chg' ); ?></h3>
+      <h4><?php _e( 'Please include your system informations when posting support requests.' , 'text_domain_to_be_chg' ) ?></h4>
+      <textarea readonly="readonly" onclick="this.focus();this.select()" id="system-info-textarea" name="tc-sysinfo" title="<?php _e( 'To copy the system info, click below then press Ctrl + C (PC) or Cmd + C (Mac).', 'text_domain_to_be_chg' ); ?>" style="width: 800px;min-height: 800px;font-family: Menlo,Monaco,monospace;background: 0 0;white-space: pre;overflow: auto;display:block;"><?php echo wp_kses_post(sek_config_infos()); ?></textarea>
     <?php
 }
 
@@ -530,8 +539,8 @@ function print_system_info() {
 /* ------------------------------------------------------------------------- */
 nb_register_option_tab([
     'id' => 'doc',
-    'title' => __('Documentation', 'nimble-builder'),
-    'page_title' => __('Nimble Builder knowledge base', 'nimble-builder' ),
+    'title' => __('Documentation', 'text-doma'),
+    'page_title' => __('Nimble Builder knowledge base', 'nimble' ),
     'content' => '\Nimble\print_doc_page',
 ]);
 function print_doc_page() {
@@ -557,7 +566,7 @@ function print_doc_page() {
             <li><a target="_blank" rel="noopener noreferrer" href="https://docs.presscustomizr.com/article/383-how-to-customize-the-height-of-your-sections-and-columns-with-the-nimble-builder"><span>How to customize the height of your sections and columns with Nimble Builder ?</span></a></li>
 
           </ul>
-        <a href="https://docs.presscustomizr.com/collection/334-nimble-page-builder" target="_blank" class="button button-primary button-hero" rel="noopener noreferrer"><span class="dashicons dashicons-search"></span>&nbsp;<?php _e('Explore Nimble Builder knowledge base', 'nimble-builder'); ?></a>
+        <a href="https://docs.presscustomizr.com/collection/334-nimble-page-builder" target="_blank" class="button button-primary button-hero" rel="noopener noreferrer"><span class="dashicons dashicons-search"></span>&nbsp;<?php _e('Explore Nimble Builder knowledge base', 'text-doma'); ?></a>
       </div>
 
     <?php
