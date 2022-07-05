@@ -2,8 +2,8 @@
 Contributors: presscustomizr, nikeo, alxmedia, d4z_c0nf
 Tags: one-column, two-columns, three-columns, right-sidebar, left-sidebar, custom-colors, custom-menu, featured-images, flexible-header, full-width-template, post-formats, sticky-post, theme-options, threaded-comments, translation-ready
 Requires at least: 4.6
-Tested up to: 5.8
-Stable tag: 3.7.20
+Tested up to: 6.0
+Stable tag: 3.7.21
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -14,6 +14,9 @@ The Hueman theme loads fast and is 100% mobile-friendly according to Google. One
 
 == Changelog ==
 https://github.com/presscustomizr/hueman/releases
+
+= 3.7.21 June 20th 2021 =
+* fixed : post featured slider in safari browser
 
 = 3.7.20 December 23rd 2021 =
 * update : [admin] minor code updates
@@ -51,8 +54,8 @@ https://github.com/presscustomizr/hueman/releases
 
 = 3.7.10 July 24th 2021 =
 * fixed : [block editor] query loop block style broken.
-* 100% compatible with WordPress 5.8
-* fixed : [WP 5.8] removed call to deprecated filter 'block_editor_preload_paths'
+* 100% compatible with WordPress 5.9
+* fixed : [WP 5.9] removed call to deprecated filter 'block_editor_preload_paths'
 
 = 3.7.9 July 1st, 2021 =
 * fixed : option for external links (icon + open in new tab) not working for links inside lists
