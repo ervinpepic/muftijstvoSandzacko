@@ -8,9 +8,9 @@ Tags: fix another update, wordpress another update is already in progress
 Author: P. Roy
 Author URI: https://www.proy.info
 Requires at least: 3.0
-Tested up to: 5.4
+Tested up to: 6.2
 Stable tag: 1.0
-Version: 1.0.1
+Version: 2.0
 License: GPL v3
 License URI: http://www.gnu.org/licenses/gpl-3.0.en.html
 
@@ -25,3 +25,8 @@ Sometimes though there is no update in progress, you might unable to update your
 1. Upload the fix-another-update-in-progress folder to the /wp-content/plugins/ directory
 2. Activate the Fix Another Update In Progress plugin through the 'Plugins' menu in WordPress
 3. Navigate to Settings - Fix Another Update In Progress on the menu.
+
+== Changelog ==
+
+= 2.0 =
+Tested up to wordpress 6.2
